@@ -1583,8 +1583,8 @@ function Quantum:CreateWindow(data)
 
                 local ToggleCircle = Create("Frame", {
                     Parent = ToggleBtn,
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(0, 3, 0.5, -7),
+                    Size = UDim2.new(0, 12, 0, 12),
+                    Position = UDim2.new(0, 3, 0.5, -6),
                     BackgroundColor3 = CurrentTheme.Text,
                     BorderSizePixel = 0,
                     ZIndex = 20
@@ -1602,17 +1602,17 @@ function Quantum:CreateWindow(data)
                 local state = default
                 if default then
                     ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                    ToggleCircle.Position = UDim2.new(0, 27, 0.5, -7)
+                    ToggleCircle.Position = UDim2.new(0, 25, 0.5, -6)
                 end
 
                 ToggleClick.MouseButton1Click:Connect(function()
                     state = not state
                     if state then
                         ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                        ToggleCircle.Position = UDim2.new(0, 27, 0.5, -7)
+                        ToggleCircle.Position = UDim2.new(0, 25, 0.5, -6)
                     else
                         ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
-                        ToggleCircle.Position = UDim2.new(0, 3, 0.5, -7)
+                        ToggleCircle.Position = UDim2.new(0, 3, 0.5, -6)
                     end
                     callback(state)
                 end)
@@ -1632,10 +1632,10 @@ function Quantum:CreateWindow(data)
                         state = val
                         if state then
                             ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                            ToggleCircle.Position = UDim2.new(0, 27, 0.5, -7)
+                            ToggleCircle.Position = UDim2.new(0, 25, 0.5, -6)
                         else
                             ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
-                            ToggleCircle.Position = UDim2.new(0, 3, 0.5, -7)
+                            ToggleCircle.Position = UDim2.new(0, 3, 0.5, -6)
                         end
                         callback(state)
                     end,
@@ -3260,7 +3260,7 @@ function Quantum:CreateWindow(data)
                 })
                 Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Dot})
 
-                Create("ImageLabel", {
+                local IconImg = Create("ImageLabel", {
                     Parent = StatusFrame,
                     Size = UDim2.new(0, 10, 0, 10),
                     Position = UDim2.new(0, 16, 0.5, -5),
@@ -3288,7 +3288,24 @@ function Quantum:CreateWindow(data)
                     StatusLabel.TextColor3 = theme.Text
                 end)
 
-                return {Set = function(t) StatusLabel.Text = t end, Get = function() return StatusLabel.Text end}
+                local StatusAPI = {}
+                function StatusAPI:Set(data)
+                    if type(data) == "string" then
+                        StatusLabel.Text = data
+                    elseif type(data) == "table" then
+                        if data.Text then StatusLabel.Text = data.Text end
+                        if data.Color then
+                            Dot.BackgroundColor3 = data.Color
+                            IconImg.ImageColor3 = data.Color
+                        end
+                        if data.Icon then IconImg.Image = GetIcon(data.Icon) end
+                    end
+                end
+                function StatusAPI:SetText(t) StatusLabel.Text = t end
+                function StatusAPI:SetColor(c) Dot.BackgroundColor3 = c; IconImg.ImageColor3 = c end
+                function StatusAPI:SetIcon(i) IconImg.Image = GetIcon(i) end
+                function StatusAPI:Get() return StatusLabel.Text end
+                return StatusAPI
             end
 
             return SectionAPI
