@@ -2621,50 +2621,319 @@ local function SetWalkOnWater(val)
     end
 end
 
+local TextChatService = game:GetService("TextChatService")
 local originalDisplayName = LocalPlayer.DisplayName
-local customNameActive = false
-local customNameCharConnection, customNameDescendantConnection = nil, nil
 
-local function updateCharacterName(char, name)
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid"); if hum then pcall(function() hum.DisplayName = name end) end
-    for _, obj in pairs(char:GetDescendants()) do
-        if obj:IsA("BillboardGui") then for _, child in pairs(obj:GetDescendants()) do if child:IsA("TextLabel") then pcall(function() child.Text = name end) end end
-        elseif obj:IsA("TextLabel") and obj.Parent and obj.Parent.Name == "Head" then pcall(function() obj.Text = name end) end
+_G.CustomNameActive = false
+_G.CustomNameText = "QUANTUM"
+_G.CustomLevelActive = false
+_G.CustomLevelText = "Lvl. 969"
+_G.QuantumTitleActive = false
+
+local customOverheadConnection = nil
+local customOverheadCharConnection = nil
+local chatSpoofHooked = false
+
+local function isLevelLabel(label)
+    if not label or not label:IsA("TextLabel") then return false end
+    if label.Name == "QuantumHubTitleLabel" then return false end
+    local name = label.Name:lower()
+    local text = label.Text:lower()
+    if name:find("lvl") or name:find("level") or name:find("rank") or name:find("stage") then
+        return true
     end
+    if text:find("lvl") or text:find("level") or text:find("lv%p") or text:find("level:") or text:match("^%s*[%[%(]?%d+[%]%]%s*$") then
+        return true
+    end
+    return false
+end
+
+local function isNameLabel(label)
+    if not label or not label:IsA("TextLabel") then return false end
+    if label.Name == "QuantumHubTitleLabel" then return false end
+    if isLevelLabel(label) then return false end
+    local name = label.Name:lower()
+    local text = label.Text
+    if name:find("name") or name:find("user") or name:find("display") or name:find("player") then
+        return true
+    end
+    if text:find(LocalPlayer.Name, 1, true) or text:find(originalDisplayName, 1, true) or (_G.CustomNameText and text:find(_G.CustomNameText, 1, true)) then
+        return true
+    end
+    return false
+end
+
+local function createQuantumTitleTag(char)
+    if not char then return end
+    local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+    if not head then return end
+
+    local oldTitle = head:FindFirstChild("QuantumHubTitleBillboard") or char:FindFirstChild("QuantumHubTitleBillboard")
+    if oldTitle then pcall(function() oldTitle:Destroy() end) end
+
+    if not _G.QuantumTitleActive then return end
+
+    local bbg = Instance.new("BillboardGui")
+    bbg.Name = "QuantumHubTitleBillboard"
+    bbg.Adornee = head
+    bbg.Size = UDim2.new(0, 220, 0, 36)
+    bbg.StudsOffset = Vector3.new(0, 3.3, 0)
+    bbg.AlwaysOnTop = true
+    bbg.ResetOnSpawn = false
+    bbg.Parent = head
+
+    local label = Instance.new("TextLabel")
+    label.Name = "QuantumHubTitleLabel"
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "✦ QUANTUM HUB ✦"
+    label.Font = Enum.Font.BuilderSansBold or Enum.Font.GothamBold
+    label.TextSize = 16
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextStrokeTransparency = 0.2
+    label.TextStrokeColor3 = Color3.fromRGB(4, 18, 9)
+    label.Parent = bbg
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "QuantumHubTitleStroke"
+    stroke.Thickness = 1.4
+    stroke.Color = Color3.fromRGB(0, 255, 136)
+    stroke.Transparency = 0.25
+    stroke.Parent = label
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Name = "QuantumHubTitleGradient"
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 255, 136)),
+        ColorSequenceKeypoint.new(0.25, Color3.fromRGB(10, 20, 14)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 180)),
+        ColorSequenceKeypoint.new(0.75, Color3.fromRGB(8, 15, 10)),
+        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(0, 255, 136))
+    })
+    gradient.Parent = label
+
+    return bbg, gradient
+end
+
+local function startQuantumTitleAnimation()
+    if _G.QuantumTitleRenderConn then
+        pcall(function() _G.QuantumTitleRenderConn:Disconnect() end)
+        _G.QuantumTitleRenderConn = nil
+    end
+
+    _G.QuantumTitleRenderConn = RunService.RenderStepped:Connect(function()
+        if not _G.QuantumTitleActive then return end
+        local char = LocalPlayer.Character
+        if not char then return end
+        local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+        if not head then return end
+
+        local bbg = head:FindFirstChild("QuantumHubTitleBillboard")
+        if not bbg then
+            createQuantumTitleTag(char)
+            return
+        end
+
+        local label = bbg:FindFirstChild("QuantumHubTitleLabel")
+        if label then
+            local grad = label:FindFirstChild("QuantumHubTitleGradient")
+            if grad then
+                local t = tick() * 0.75
+                local offsetVal = (t % 2) - 1
+                grad.Offset = Vector2.new(offsetVal, 0)
+            end
+        end
+    end)
+end
+
+local function applyOverheadVisuals(char)
+    if not char then return end
+
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        if _G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "" then
+            pcall(function() hum.DisplayName = _G.CustomNameText end)
+        elseif not _G.CustomNameActive then
+            pcall(function() hum.DisplayName = originalDisplayName end)
+        end
+    end
+
+    for _, obj in pairs(char:GetDescendants()) do
+        if obj:IsA("BillboardGui") and obj.Name ~= "QuantumHubTitleBillboard" then
+            for _, child in pairs(obj:GetDescendants()) do
+                if child:IsA("TextLabel") and child.Name ~= "QuantumHubTitleLabel" then
+                    if isLevelLabel(child) then
+                        if _G.CustomLevelActive and _G.CustomLevelText and _G.CustomLevelText ~= "" then
+                            pcall(function() child.Text = _G.CustomLevelText end)
+                        end
+                    elseif isNameLabel(child) then
+                        if _G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "" then
+                            pcall(function() child.Text = _G.CustomNameText end)
+                        elseif not _G.CustomNameActive then
+                            pcall(function() child.Text = originalDisplayName end)
+                        end
+                    end
+                end
+            end
+        elseif obj:IsA("TextLabel") and obj.Parent and obj.Parent.Name == "Head" and obj.Name ~= "QuantumHubTitleLabel" then
+            if isLevelLabel(obj) then
+                if _G.CustomLevelActive and _G.CustomLevelText and _G.CustomLevelText ~= "" then
+                    pcall(function() obj.Text = _G.CustomLevelText end)
+                end
+            else
+                if _G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "" then
+                    pcall(function() obj.Text = _G.CustomNameText end)
+                elseif not _G.CustomNameActive then
+                    pcall(function() obj.Text = originalDisplayName end)
+                end
+            end
+        end
+    end
+
+    if _G.QuantumTitleActive then
+        createQuantumTitleTag(char)
+    end
+end
+
+local function hookCharacterOverhead(char)
+    if not char then return end
+    applyOverheadVisuals(char)
+    if customOverheadConnection then pcall(function() customOverheadConnection:Disconnect() end) end
+    customOverheadConnection = char.DescendantAdded:Connect(function(desc)
+        if desc:IsA("BillboardGui") or desc:IsA("TextLabel") or desc:IsA("Humanoid") then
+            task.wait(0.05)
+            applyOverheadVisuals(char)
+        end
+    end)
+end
+
+local function setupChatSpoof()
+    if chatSpoofHooked then return end
+    chatSpoofHooked = true
+
+    pcall(function()
+        if TextChatService and TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+            TextChatService.OnIncomingMessage = function(message)
+                local props = Instance.new("TextChatMessageProperties")
+                if message.TextSource and message.TextSource.UserId == LocalPlayer.UserId then
+                    local nameToDisplay = (_G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "") and _G.CustomNameText or LocalPlayer.DisplayName
+                    local prefixStr = ""
+                    if _G.QuantumTitleActive then
+                        prefixStr = "<font color='#00FF88'><b>[Quantum HUB]</b></font> "
+                    end
+                    props.PrefixText = prefixStr .. "<font color='#00FFAA'><b>" .. nameToDisplay .. "</b></font>:"
+                end
+                return props
+            end
+        end
+    end)
+
+    pcall(function()
+        local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+        if not playerGui then return end
+
+        local function hookChatGui(chatGui)
+            if not chatGui then return end
+            chatGui.DescendantAdded:Connect(function(desc)
+                if desc:IsA("TextLabel") and (_G.CustomNameActive or _G.QuantumTitleActive) then
+                    task.defer(function()
+                        pcall(function()
+                            local text = desc.Text
+                            local realName = LocalPlayer.Name
+                            local realDisp = originalDisplayName or LocalPlayer.DisplayName
+                            local fakeName = (_G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "") and _G.CustomNameText or realDisp
+                            if text:find(realDisp, 1, true) or text:find(realName, 1, true) then
+                                local newText = text:gsub(realDisp, fakeName):gsub(realName, fakeName)
+                                if _G.QuantumTitleActive and not newText:find("Quantum HUB", 1, true) then
+                                    newText = "[Quantum HUB] " .. newText
+                                end
+                                desc.Text = newText
+                            end
+                        end)
+                    end)
+                end
+            end)
+        end
+
+        local existingChat = playerGui:FindFirstChild("Chat")
+        if existingChat then hookChatGui(existingChat) end
+        playerGui.ChildAdded:Connect(function(child)
+            if child.Name == "Chat" then hookChatGui(child) end
+        end)
+    end)
 end
 
 local function ApplyCustomName(name)
     if not name or name == "" then NotifyError("Custom Name", "Nama tidak boleh kosong!"); return end
-    customNameActive = true; _G.CustomNameText = name
+    _G.CustomNameActive = true
+    _G.CustomNameText = name
     pcall(function() LocalPlayer.DisplayName = name end)
-    if customNameDescendantConnection then pcall(function() customNameDescendantConnection:Disconnect() end) end
-    if customNameCharConnection then pcall(function() customNameCharConnection:Disconnect() end) end
     local char = LocalPlayer.Character
-    if char then
-        updateCharacterName(char, name)
-        pcall(function() customNameDescendantConnection = char.DescendantAdded:Connect(function() if customNameActive then task.wait(0.1); updateCharacterName(char, _G.CustomNameText) end end) end)
-    end
-    pcall(function()
-        customNameCharConnection = LocalPlayer.CharacterAdded:Connect(function(newChar)
-            task.wait(0.5); if customNameActive then
-                updateCharacterName(newChar, _G.CustomNameText)
-                if customNameDescendantConnection then pcall(function() customNameDescendantConnection:Disconnect() end) end
-                pcall(function() customNameDescendantConnection = newChar.DescendantAdded:Connect(function() if customNameActive then task.wait(0.1); updateCharacterName(newChar, _G.CustomNameText) end end) end)
-            end
-        end)
-    end)
-    NotifySuccess("Custom Name", "Nama berubah jadi: " .. name)
+    if char then applyOverheadVisuals(char) end
+    NotifySuccess("Custom Name", "Nama diubah ke: " .. name)
 end
 
 local function RemoveCustomName()
-    customNameActive = false; _G.CustomNameText = nil
+    _G.CustomNameActive = false
     pcall(function() LocalPlayer.DisplayName = originalDisplayName end)
-    local char = LocalPlayer.Character; if char then updateCharacterName(char, originalDisplayName) end
-    if customNameDescendantConnection then pcall(function() customNameDescendantConnection:Disconnect() end); customNameDescendantConnection = nil end
-    if customNameCharConnection then pcall(function() customNameCharConnection:Disconnect() end); customNameCharConnection = nil end
+    local char = LocalPlayer.Character
+    if char then applyOverheadVisuals(char) end
     NotifyInfo("Custom Name", "Nama asli dikembalikan.")
 end
+
+local function ApplyCustomLevel(lvl)
+    if not lvl or lvl == "" then NotifyError("Custom Level", "Level tidak boleh kosong!"); return end
+    _G.CustomLevelActive = true
+    _G.CustomLevelText = lvl
+    local char = LocalPlayer.Character
+    if char then applyOverheadVisuals(char) end
+    NotifySuccess("Custom Level", "Level diubah ke: " .. lvl)
+end
+
+local function RemoveCustomLevel()
+    _G.CustomLevelActive = false
+    local char = LocalPlayer.Character
+    if char then applyOverheadVisuals(char) end
+    NotifyInfo("Custom Level", "Fake level dinonaktifkan.")
+end
+
+local function SetQuantumTitle(enabled)
+    _G.QuantumTitleActive = enabled
+    local char = LocalPlayer.Character
+    if enabled then
+        if char then createQuantumTitleTag(char) end
+        startQuantumTitleAnimation()
+        NotifySuccess("Title Tag", "Quantum HUB Title diaktifkan!")
+    else
+        if _G.QuantumTitleRenderConn then
+            pcall(function() _G.QuantumTitleRenderConn:Disconnect() end)
+            _G.QuantumTitleRenderConn = nil
+        end
+        if char then
+            for _, obj in pairs(char:GetDescendants()) do
+                if obj.Name == "QuantumHubTitleBillboard" then
+                    pcall(function() obj:Destroy() end)
+                end
+            end
+        end
+        NotifyInfo("Title Tag", "Quantum HUB Title dimatikan.")
+    end
+end
+
+if customOverheadCharConnection then pcall(function() customOverheadCharConnection:Disconnect() end) end
+customOverheadCharConnection = LocalPlayer.CharacterAdded:Connect(function(newChar)
+    task.wait(0.5)
+    hookCharacterOverhead(newChar)
+    if _G.QuantumTitleActive then
+        createQuantumTitleTag(newChar)
+    end
+end)
+
+if LocalPlayer.Character then
+    hookCharacterOverhead(LocalPlayer.Character)
+end
+
+setupChatSpoof()
 
 local _hiddenTag = false
 _G.NoAnimationEnabled = false
@@ -2806,18 +3075,17 @@ if PlayersTab then
         })
         Section_PlayersTab_2:AddToggle("Toggle_WalkonWater", { Title = "Walk on Water", Default = false, Callback = function(val) SetWalkOnWater(val) end })
 
-        local Section_PlayersTab_3 = PlayersTab:AddSection("Custom Name")
-        local isHideActive = false
-        local hideConnection = nil
+        local Section_PlayersTab_3 = PlayersTab:AddSection("Custom Name & Level")
 
         local customName = "QUANTUM"
         local customLevel = "Lvl. 969"
 
         Section_PlayersTab_3:AddInput("Input_CustomFakeName", {
             Title = "Custom Fake Name",
-            Description = "Nama samaran yang akan muncul di atas kepala player.",
+            Description = "Nama samaran di kepala & chat (hanya terlihat di kamu)",
             Value = customName,
-            Placeholder = "Hidden User",
+            Default = customName,
+            Placeholder = "QUANTUM",
             Icon = "lucide:user-x",
             Callback = function(text)
                 customName = text
@@ -2826,18 +3094,64 @@ if PlayersTab then
 
         Section_PlayersTab_3:AddInput("Input_CustomFakeLevel", {
             Title = "Custom Fake Level",
-            Description = "Level samaran (misal: 'Lvl. 100' atau 'Max').",
+            Description = "Level samaran di kepala (misal: 'Lvl. 969' atau 'Max')",
             Value = customLevel,
-            Placeholder = "Lvl. 999",
+            Default = customLevel,
+            Placeholder = "Lvl. 969",
             Icon = "lucide:bar-chart-2",
             Callback = function(text)
                 customLevel = text
             end, Finished = true
         })
 
-        Section_PlayersTab_3:AddButton({ Title = "Apply Name", Callback = function() if customName and customName ~= "" then ApplyCustomName(customName) else NotifyError("Custom Name", "Masukkan nama dulu!") end end })
-        Section_PlayersTab_3:AddButton({ Title = "Apply Level", Callback = function() if customLevel and customLevel ~= "" then NotifySuccess("Custom Level", "Level diubah ke: " .. customLevel) else NotifyError("Custom Level", "Masukkan level dulu!") end end })
-        Section_PlayersTab_3:AddButton({ Title = "Remove Fake Level", Callback = function() RemoveCustomName() end })
+        Section_PlayersTab_3:AddButton({
+            Title = "Apply Name",
+            Description = "Terapkan nama samaran ke overhead & chat",
+            Callback = function()
+                if customName and customName ~= "" then
+                    ApplyCustomName(customName)
+                else
+                    NotifyError("Custom Name", "Masukkan nama dulu!")
+                end
+            end
+        })
+
+        Section_PlayersTab_3:AddButton({
+            Title = "Reset Name",
+            Description = "Kembalikan nama asli",
+            Callback = function()
+                RemoveCustomName()
+            end
+        })
+
+        Section_PlayersTab_3:AddButton({
+            Title = "Apply Level",
+            Description = "Terapkan level samaran secara terpisah",
+            Callback = function()
+                if customLevel and customLevel ~= "" then
+                    ApplyCustomLevel(customLevel)
+                else
+                    NotifyError("Custom Level", "Masukkan level dulu!")
+                end
+            end
+        })
+
+        Section_PlayersTab_3:AddButton({
+            Title = "Reset Level",
+            Description = "Kembalikan level asli",
+            Callback = function()
+                RemoveCustomLevel()
+            end
+        })
+
+        Section_PlayersTab_3:AddToggle("Toggle_QuantumHubTitle", {
+            Title = "Quantum HUB Title Tag",
+            Description = "Title berkilau gradien hijau-hitam bergerak di atas kepala",
+            Default = false,
+            Callback = function(val)
+                SetQuantumTitle(val)
+            end
+        })
 
         local Section_PlayersTab_5 = PlayersTab:AddSection("FreeCam")
         Section_PlayersTab_5:AddSlider("Slider_FreeCamSpeed", { Title = "FreeCam Speed", Min = 1, Max = 20, Default = 5 , Rounding = 0, Callback = function(val) _G.FreeCamSpeed = val end })
