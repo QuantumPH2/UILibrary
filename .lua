@@ -5017,50 +5017,154 @@ if MainTab then
 
         local selectedPotions = {}
 
+        -- Strictly get RF/ConsumePotion from sleitnick net
         local function getPotionRemote()
-            if Events.consume_potion then return Events.consume_potion end
-            if Events.ConsumePotion then return Events.ConsumePotion end
-            local r = GetServerRemote("RF/ConsumePotion") or GetServerRemote("ConsumePotion")
-            if r then
-                Events.consume_potion = r
-                return r
-            end
+            local r = nil
             if net then
-                r = net:FindFirstChild("RF/ConsumePotion") or net:FindFirstChild("ConsumePotion")
-                if r then
-                    Events.consume_potion = r
-                    return r
-                end
+                pcall(function()
+                    r = net:FindFirstChild("RF/ConsumePotion")
+                end)
             end
-            return nil
+            if not r then
+                pcall(function()
+                    local packages = ReplicatedStorage:FindFirstChild("Packages")
+                    local index = packages and packages:FindFirstChild("_Index")
+                    if index then
+                        for _, folder in ipairs(index:GetChildren()) do
+                            if folder.Name:find("sleitnick_net") then
+                                local netF = folder:FindFirstChild("net")
+                                if netF then
+                                    r = netF:FindFirstChild("RF/ConsumePotion")
+                                    if r then break end
+                                end
+                            end
+                        end
+                    end
+                end)
+            end
+            if not r then
+                pcall(function()
+                    r = ReplicatedStorage:FindFirstChild("RF/ConsumePotion", true)
+                end)
+            end
+            return r
+        end
+
+        local function findPotionUUID(potionId, potionName)
+            local uuid = nil
+            local totalCount = 0
+            pcall(function()
+                local replion = GetPlayerDataReplion()
+                local inv = replion and replion:GetExpect("Inventory")
+                if not inv then return end
+                
+                local function searchIn(list)
+                    if list and type(list) == "table" then
+                        for _, item in ipairs(list) do
+                            if item then
+                                local match = false
+                                if tonumber(item.Id) == potionId then
+                                    match = true
+                                elseif item.Identifier and tostring(item.Identifier):lower() == potionName:lower() then
+                                    match = true
+                                elseif item.Name and tostring(item.Name):lower() == potionName:lower() then
+                                    match = true
+                                end
+                                if match then
+                                    if not uuid and item.UUID then
+                                        uuid = item.UUID
+                                    end
+                                    totalCount = totalCount + (tonumber(item.Quantity) or tonumber(item.Count) or 1)
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                searchIn(inv.Items)
+                searchIn(inv.Potions)
+                searchIn(inv.Consumables)
+            end)
+            return uuid, totalCount
         end
 
         local function doConsumePotions()
             local r = getPotionRemote()
             if not r then
-                NotifyError("Potion", "Remote RF/ConsumePotion tidak ditemukan!")
+                NotifyError("Consume Potion", "Remote RF/ConsumePotion tidak ditemukan!")
                 return false
             end
             if #selectedPotions == 0 then
-                NotifyWarning("Potion", "Pilih potion terlebih dahulu di dropdown!")
+                NotifyWarning("Consume Potion", "Pilih potion terlebih dahulu di dropdown!")
                 return false
             end
+
             local successCount = 0
             for _, name in ipairs(selectedPotions) do
                 local pId = potionMap[name]
                 if pId then
-                    local ok = pcall(function()
-                        r:InvokeServer(pId)
-                    end)
-                    if ok then
+                    local uuid, count = findPotionUUID(pId, name)
+                    local consumed = false
+                    local errMsg = nil
+
+                    -- 1. Try invoking with inventory item UUID if found
+                    if uuid then
+                        local ok, res = pcall(function()
+                            return r:InvokeServer(uuid)
+                        end)
+                        if ok and res ~= false then
+                            consumed = true
+                        elseif not ok then
+                            errMsg = tostring(res)
+                        end
+                    end
+
+                    -- 2. Try invoking with numeric potion ID
+                    if not consumed then
+                        local ok, res = pcall(function()
+                            return r:InvokeServer(pId)
+                        end)
+                        if ok and res ~= false then
+                            consumed = true
+                        elseif not ok and not errMsg then
+                            errMsg = tostring(res)
+                        end
+                    end
+
+                    -- 3. Try with string ID
+                    if not consumed then
+                        local ok, res = pcall(function()
+                            return r:InvokeServer(tostring(pId))
+                        end)
+                        if ok and res ~= false then
+                            consumed = true
+                        end
+                    end
+
+                    -- 4. Try with UUID and ID combination if available
+                    if not consumed and uuid then
+                        local ok, res = pcall(function()
+                            return r:InvokeServer(uuid, pId)
+                        end)
+                        if ok and res ~= false then
+                            consumed = true
+                        end
+                    end
+
+                    if consumed then
                         successCount = successCount + 1
-                        NotifySuccess("Potion", "Berhasil consume: " .. name)
+                        NotifySuccess("Potion", "Berhasil consume: " .. name .. (count > 0 and (" (Sisa: " .. (count - 1) .. ")") or ""))
                     else
-                        NotifyError("Potion", "Gagal consume: " .. name)
+                        if count == 0 then
+                            NotifyWarning("Potion", name .. " tidak ada di inventory kamu!")
+                        else
+                            NotifyError("Potion", "Gagal consume " .. name .. (errMsg and (": " .. errMsg) or ""))
+                        end
                     end
                     task.wait(0.5)
                 end
             end
+
             if successCount > 0 then
                 task.wait(0.5)
                 pcall(equipRod)
