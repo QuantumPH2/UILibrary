@@ -7307,7 +7307,7 @@ if FlyTab then
         local function ScanNPCs()
             local npcs = {}
             pcall(function()
-                local npcFolder = ReplicatedStorage:FindFirstChild("NPC")
+                local npcFolder = ReplicatedStorage:FindFirstChild("NPC") or Workspace:FindFirstChild("NPC")
                 if not npcFolder then return end
                 for _, npc in ipairs(npcFolder:GetChildren()) do
                     local targetCFrameme = nil
@@ -7317,6 +7317,8 @@ if FlyTab then
                                 targetCFrameme = npc.PrimaryPart.CFrame
                             else
                                 local hrp = npc:FindFirstChild("HumanoidRootPart")
+                                    or npc:FindFirstChild("Head")
+                                    or npc:FindFirstChildWhichIsA("BasePart")
                                 if hrp then targetCFrameme = hrp.CFrame end
                             end
                         elseif npc:IsA("BasePart") then
@@ -7328,7 +7330,7 @@ if FlyTab then
                     end
                 end
             end)
-            table.sort(npcs, function(a, b) return a.Name < b.Name end)
+            table.sort(npcs, function(a, b) return a.Name:lower() < b.Name:lower() end)
             return npcs
         end
 
@@ -7340,16 +7342,17 @@ if FlyTab then
             Default = npcDropdownValues[1],
 
             Callback = function(val)
-                if val ~= "-- Refresh dulu --" and val ~= "Tidak ada NPC" then
+                if val and val ~= "-- Refresh dulu --" and val ~= "Tidak ada NPC" then
                     for _, npc in ipairs(npcTeleportData.NPCList) do
-                        if npc.Title == val then
+                        if npc.Name == val then
                             npcTeleportData.SelectedNPC = npc
                             NotifyInfo("NPC", "Selected: " .. npc.Name)
                             break
                         end
                     end
                 end
-            end, Multi = false
+            end,
+            Multi = false
         })
 
         Section_FlyTab_4:AddButton({
@@ -7359,15 +7362,27 @@ if FlyTab then
                 local npcs = ScanNPCs()
                 npcTeleportData.NPCList = npcs
                 if #npcs == 0 then
-                    local emptyValues = {{ Title = "Tidak ada NPC", Icon = "lucide:circle-x" }}
-                    pcall(function() if npcTeleportData.NPCDropdownRef and npcTeleportData.NPCDropdownRef.SetValues then npcTeleportData.NPCDropdownRef:SetValues({"Tidak ada NPC"}); npcTeleportData.NPCDropdownRef:SetValue("Tidak ada NPC") end end)
+                    npcTeleportData.SelectedNPC = nil
+                    pcall(function()
+                        if npcTeleportData.NPCDropdownRef and npcTeleportData.NPCDropdownRef.SetValues then
+                            npcTeleportData.NPCDropdownRef:SetValues({"Tidak ada NPC"})
+                            npcTeleportData.NPCDropdownRef:SetValue("Tidak ada NPC")
+                        end
+                    end)
+                    NotifyWarning("NPC", "Tidak ada NPC ditemukan!")
                     return
                 end
                 local newValues = {}
                 for _, npc in ipairs(npcs) do
-                    table.insert(newValues, { Title = npc.Name, Icon = "lucide:users" })
+                    table.insert(newValues, npc.Name)
                 end
-                pcall(function() if npcTeleportData.NPCDropdownRef and npcTeleportData.NPCDropdownRef.SetValues then npcTeleportData.NPCDropdownRef:SetValues(newValues); npcTeleportData.NPCDropdownRef:SetValue(newValues[1]) end end)
+                pcall(function()
+                    if npcTeleportData.NPCDropdownRef and npcTeleportData.NPCDropdownRef.SetValues then
+                        npcTeleportData.NPCDropdownRef:SetValues(newValues)
+                        npcTeleportData.NPCDropdownRef:SetValue(newValues[1])
+                    end
+                end)
+                npcTeleportData.SelectedNPC = npcs[1]
                 NotifySuccess("NPC", "Ditemukan " .. #npcs .. " NPC!")
             end
         })
