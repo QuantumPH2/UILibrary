@@ -2717,10 +2717,10 @@ v0_sec2:AddButton({
     end
 })
 
-local local v1_sec1 = v1:AddSection({
-local     Title = "{ Title = "World & Time Status", Open = true }",
-local     Open = true
-local })
+local v1_sec1 = v1:AddSection({
+    Title = "World & Time Status",
+    Open = true
+})
 local Time = v1_sec1:AddParagraph({
     Title = "Time Zone",
     Content = ""
@@ -2763,10 +2763,10 @@ spawn(function()
         wait()
     end
 end)
-local local v1_sec2 = v1:AddSection({
-local     Title = "{ Title = "Event & Island Status", Open = true }",
-local     Open = true
-local })
+local v1_sec2 = v1:AddSection({
+    Title = "Event & Island Status",
+    Open = true
+})
 local Miragecheck = v1_sec2:AddParagraph({
     Title = "Mirage Island",
     Content = "Status: "
@@ -2985,10 +2985,10 @@ spawn(function()
         end
     end)
 end)
-local local v1_sec3 = v1:AddSection({
-local     Title = "{ Title = "Server & Job Tools", Open = true }",
-local     Open = true
-local })
+local v1_sec3 = v1:AddSection({
+    Title = "Server & Job Tools",
+    Open = true
+})
 v1_sec3:AddInput("InputJobId", {
     Finished = true,
     Title = "Input Job Id",
@@ -3060,10 +3060,10 @@ v1_sec3:AddButton({
     end
 })
 
-local local v4_sec1 = v4:AddSection({
-local     Title = "{ Title = "Fast Attack & Combat Settings", Open = true }",
-local     Open = true
-local })
+local v4_sec1 = v4:AddSection({
+    Title = "Fast Attack & Combat Settings",
+    Open = true
+})
 v4_sec1:AddDropdown("SelectAttackMode", {
     Title = "Select Attack Mode",
     Values = {"Normal Attack", "Fast Attack", "Super Attack", "Bear Attack", "Super Bear Attack"},
@@ -4873,10 +4873,10 @@ v4_sec1:AddToggle("WalkonWater", {
 		end;
 	end,
 });
-local local v4_sec2 = v4:AddSection({
-local     Title = "{ Title = "Mob Bring & Farm Tweaks", Open = true }",
-local     Open = true
-local })
+local v4_sec2 = v4:AddSection({
+    Title = "Mob Bring & Farm Tweaks",
+    Open = true
+})
 v4_sec2:AddInput("BringMobsRange", {
     Finished = true,
     Title = "Bring Mobs Range",
