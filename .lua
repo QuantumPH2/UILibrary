@@ -2623,10 +2623,13 @@ end
 
 local TextChatService = game:GetService("TextChatService")
 local originalDisplayName = LocalPlayer.DisplayName
+local originalLevelText = nil
+local cachedNameLabel = nil
+local cachedLevelLabel = nil
 
-_G.CustomNameActive = false
+_G.CustomNameActive = true
 _G.CustomNameText = "QUANTUM"
-_G.CustomLevelActive = false
+_G.CustomLevelActive = true
 _G.CustomLevelText = "Lvl. 969"
 _G.QuantumTitleActive = false
 
@@ -2634,44 +2637,71 @@ local customOverheadConnection = nil
 local customOverheadCharConnection = nil
 local chatSpoofHooked = false
 
-local function isLevelLabel(label)
-    if not label or not label:IsA("TextLabel") then return false end
-    if label.Name == "QuantumHubTitleLabel" then return false end
-    local name = label.Name:lower()
-    local text = label.Text:lower()
-    if name:find("lvl") or name:find("level") or name:find("rank") or name:find("stage") then
-        return true
+local function GetRealPlayerLevel()
+    local lvl = nil
+    pcall(function()
+        local replion = PlayerData or (GetPlayerDataReplion and GetPlayerDataReplion())
+        if replion then
+            lvl = replion:GetExpect("Level") or replion:Get("Level")
+        end
+    end)
+    if not lvl then
+        pcall(function()
+            local ls = LocalPlayer:FindFirstChild("leaderstats")
+            if ls and ls:FindFirstChild("Level") then
+                lvl = ls.Level.Value
+            end
+        end)
     end
-    if text:find("lvl") or text:find("level") or text:find("lv%p") or text:find("level:") or text:match("^%s*[%[%(]?%d+[%]%]%s*$") then
-        return true
+    if not lvl then
+        pcall(function()
+            lvl = LocalPlayer:GetAttribute("Level") or LocalPlayer:GetAttribute("PlayerLevel")
+        end)
     end
-    return false
+    if not lvl and originalLevelText and originalLevelText ~= "" and originalLevelText ~= _G.CustomLevelText then
+        return originalLevelText
+    end
+    if lvl then
+        return "Lvl. " .. tostring(lvl)
+    end
+    return "Lvl. 1"
 end
 
-local function isNameLabel(label)
-    if not label or not label:IsA("TextLabel") then return false end
-    if label.Name == "QuantumHubTitleLabel" then return false end
-    if isLevelLabel(label) then return false end
-    local name = label.Name:lower()
-    local text = label.Text
-    if name:find("name") or name:find("user") or name:find("display") or name:find("player") then
-        return true
+local currentTitleGui = nil
+local currentTitleGradient = nil
+
+local function removeQuantumTitle()
+    if _G.QuantumTitleRenderConn then
+        pcall(function() _G.QuantumTitleRenderConn:Disconnect() end)
+        _G.QuantumTitleRenderConn = nil
     end
-    if text:find(LocalPlayer.Name, 1, true) or text:find(originalDisplayName, 1, true) or (_G.CustomNameText and text:find(_G.CustomNameText, 1, true)) then
-        return true
+    currentTitleGradient = nil
+    if currentTitleGui then
+        pcall(function() currentTitleGui:Destroy() end)
+        currentTitleGui = nil
     end
-    return false
+    local char = LocalPlayer.Character
+    if char then
+        for _, obj in pairs(char:GetDescendants()) do
+            if obj.Name == "QuantumHubTitleBillboard" then
+                pcall(function() obj:Destroy() end)
+            end
+        end
+    end
 end
 
 local function createQuantumTitleTag(char)
-    if not char then return end
+    if not char then char = LocalPlayer.Character end
+    if not char or not _G.QuantumTitleActive then return end
+
     local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
     if not head then return end
 
-    local oldTitle = head:FindFirstChild("QuantumHubTitleBillboard") or char:FindFirstChild("QuantumHubTitleBillboard")
-    if oldTitle then pcall(function() oldTitle:Destroy() end) end
+    if currentTitleGui and currentTitleGui.Parent == head and currentTitleGradient and currentTitleGradient.Parent then
+        return
+    end
 
-    if not _G.QuantumTitleActive then return end
+    removeQuantumTitle()
 
     local bbg = Instance.new("BillboardGui")
     bbg.Name = "QuantumHubTitleBillboard"
@@ -2680,7 +2710,8 @@ local function createQuantumTitleTag(char)
     bbg.StudsOffset = Vector3.new(0, 3.3, 0)
     bbg.AlwaysOnTop = true
     bbg.ResetOnSpawn = false
-    bbg.Parent = head
+    bbg.LightInfluence = 0
+    bbg.MaxDistance = 150
 
     local label = Instance.new("TextLabel")
     label.Name = "QuantumHubTitleLabel"
@@ -2690,29 +2721,31 @@ local function createQuantumTitleTag(char)
     label.Font = Enum.Font.BuilderSansBold or Enum.Font.GothamBold
     label.TextSize = 16
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextStrokeTransparency = 0.2
-    label.TextStrokeColor3 = Color3.fromRGB(4, 18, 9)
+    label.TextStrokeTransparency = 0.3
+    label.TextStrokeColor3 = Color3.fromRGB(2, 14, 7)
     label.Parent = bbg
 
     local stroke = Instance.new("UIStroke")
     stroke.Name = "QuantumHubTitleStroke"
-    stroke.Thickness = 1.4
+    stroke.Thickness = 1.2
     stroke.Color = Color3.fromRGB(0, 255, 136)
-    stroke.Transparency = 0.25
+    stroke.Transparency = 0.3
     stroke.Parent = label
 
     local gradient = Instance.new("UIGradient")
     gradient.Name = "QuantumHubTitleGradient"
     gradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 255, 136)),
-        ColorSequenceKeypoint.new(0.25, Color3.fromRGB(10, 20, 14)),
+        ColorSequenceKeypoint.new(0.25, Color3.fromRGB(8, 20, 12)),
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 180)),
-        ColorSequenceKeypoint.new(0.75, Color3.fromRGB(8, 15, 10)),
+        ColorSequenceKeypoint.new(0.75, Color3.fromRGB(6, 15, 9)),
         ColorSequenceKeypoint.new(1.0, Color3.fromRGB(0, 255, 136))
     })
     gradient.Parent = label
 
-    return bbg, gradient
+    currentTitleGradient = gradient
+    currentTitleGui = bbg
+    bbg.Parent = head
 end
 
 local function startQuantumTitleAnimation()
@@ -2723,86 +2756,137 @@ local function startQuantumTitleAnimation()
 
     _G.QuantumTitleRenderConn = RunService.RenderStepped:Connect(function()
         if not _G.QuantumTitleActive then return end
-        local char = LocalPlayer.Character
-        if not char then return end
-        local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
-        if not head then return end
-
-        local bbg = head:FindFirstChild("QuantumHubTitleBillboard")
-        if not bbg then
-            createQuantumTitleTag(char)
-            return
-        end
-
-        local label = bbg:FindFirstChild("QuantumHubTitleLabel")
-        if label then
-            local grad = label:FindFirstChild("QuantumHubTitleGradient")
-            if grad then
-                local t = tick() * 0.75
-                local offsetVal = (t % 2) - 1
-                grad.Offset = Vector2.new(offsetVal, 0)
-            end
+        if currentTitleGradient and currentTitleGradient.Parent then
+            local t = (tick() * 0.7) % 2 - 1
+            currentTitleGradient.Offset = Vector2.new(t, 0)
         end
     end)
 end
 
 local function applyOverheadVisuals(char)
+    if not char then char = LocalPlayer.Character end
     if not char then return end
 
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        if _G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "" then
-            pcall(function() hum.DisplayName = _G.CustomNameText end)
-        elseif not _G.CustomNameActive then
-            pcall(function() hum.DisplayName = originalDisplayName end)
+    pcall(function()
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            if _G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "" then
+                hum.DisplayName = _G.CustomNameText
+            else
+                hum.DisplayName = originalDisplayName
+            end
         end
-    end
+    end)
 
-    for _, obj in pairs(char:GetDescendants()) do
-        if obj:IsA("BillboardGui") and obj.Name ~= "QuantumHubTitleBillboard" then
-            for _, child in pairs(obj:GetDescendants()) do
-                if child:IsA("TextLabel") and child.Name ~= "QuantumHubTitleLabel" then
-                    if isLevelLabel(child) then
-                        if _G.CustomLevelActive and _G.CustomLevelText and _G.CustomLevelText ~= "" then
-                            pcall(function() child.Text = _G.CustomLevelText end)
+    pcall(function()
+        for _, bbg in ipairs(char:GetDescendants()) do
+            if bbg:IsA("BillboardGui") and bbg.Name ~= "QuantumHubTitleBillboard" then
+                local labels = {}
+                for _, child in ipairs(bbg:GetDescendants()) do
+                    if child:IsA("TextLabel") and child.Name ~= "QuantumHubTitleLabel" then
+                        table.insert(labels, child)
+                    end
+                end
+
+                for _, lbl in ipairs(labels) do
+                    local n = lbl.Name:lower()
+                    local t = lbl.Text:lower()
+
+                    local isLvl = (lbl == cachedLevelLabel)
+                        or n:find("lvl") or n:find("level") or n:find("rank") or n:find("stage") or n:find("sub")
+                        or t:find("lvl") or t:find("level") or t:find("lv%p") or t:find("level:")
+                        or (lbl.Text == _G.CustomLevelText)
+                        or (originalLevelText and lbl.Text == originalLevelText)
+
+                    local isNm = (lbl == cachedNameLabel)
+                        or n:find("name") or n:find("user") or n:find("display") or n:find("player")
+                        or lbl.Text:find(LocalPlayer.Name, 1, true) or lbl.Text:find(originalDisplayName, 1, true)
+                        or (lbl.Text == _G.CustomNameText)
+
+                    if isLvl and not isNm then
+                        cachedLevelLabel = lbl
+                        if not originalLevelText and lbl.Text ~= _G.CustomLevelText and lbl.Text ~= _G.CustomNameText then
+                            originalLevelText = lbl.Text
                         end
-                    elseif isNameLabel(child) then
+                        if _G.CustomLevelActive and _G.CustomLevelText and _G.CustomLevelText ~= "" then
+                            lbl.Text = _G.CustomLevelText
+                        else
+                            lbl.Text = GetRealPlayerLevel()
+                        end
+                    elseif isNm and not isLvl then
+                        cachedNameLabel = lbl
                         if _G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "" then
-                            pcall(function() child.Text = _G.CustomNameText end)
-                        elseif not _G.CustomNameActive then
-                            pcall(function() child.Text = originalDisplayName end)
+                            lbl.Text = _G.CustomNameText
+                        else
+                            lbl.Text = originalDisplayName
+                        end
+                    elseif #labels == 2 then
+                        if labels[1] == lbl then
+                            cachedNameLabel = lbl
+                            if _G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "" then
+                                lbl.Text = _G.CustomNameText
+                            else
+                                lbl.Text = originalDisplayName
+                            end
+                        else
+                            cachedLevelLabel = lbl
+                            if not originalLevelText and lbl.Text ~= _G.CustomLevelText and lbl.Text ~= _G.CustomNameText then
+                                originalLevelText = lbl.Text
+                            end
+                            if _G.CustomLevelActive and _G.CustomLevelText and _G.CustomLevelText ~= "" then
+                                lbl.Text = _G.CustomLevelText
+                            else
+                                lbl.Text = GetRealPlayerLevel()
+                            end
                         end
                     end
                 end
-            end
-        elseif obj:IsA("TextLabel") and obj.Parent and obj.Parent.Name == "Head" and obj.Name ~= "QuantumHubTitleLabel" then
-            if isLevelLabel(obj) then
-                if _G.CustomLevelActive and _G.CustomLevelText and _G.CustomLevelText ~= "" then
-                    pcall(function() obj.Text = _G.CustomLevelText end)
-                end
-            else
-                if _G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "" then
-                    pcall(function() obj.Text = _G.CustomNameText end)
-                elseif not _G.CustomNameActive then
-                    pcall(function() obj.Text = originalDisplayName end)
+            elseif bbg:IsA("TextLabel") and bbg.Parent and bbg.Parent.Name == "Head" and bbg.Name ~= "QuantumHubTitleLabel" then
+                local lbl = bbg
+                local n = lbl.Name:lower()
+                local t = lbl.Text:lower()
+                if n:find("lvl") or n:find("level") or t:find("lvl") or t:find("level") or (lbl.Text == _G.CustomLevelText) then
+                    cachedLevelLabel = lbl
+                    if not originalLevelText and lbl.Text ~= _G.CustomLevelText and lbl.Text ~= _G.CustomNameText then
+                        originalLevelText = lbl.Text
+                    end
+                    if _G.CustomLevelActive and _G.CustomLevelText and _G.CustomLevelText ~= "" then
+                        lbl.Text = _G.CustomLevelText
+                    else
+                        lbl.Text = GetRealPlayerLevel()
+                    end
+                else
+                    cachedNameLabel = lbl
+                    if _G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "" then
+                        lbl.Text = _G.CustomNameText
+                    else
+                        lbl.Text = originalDisplayName
+                    end
                 end
             end
         end
-    end
-
-    if _G.QuantumTitleActive then
-        createQuantumTitleTag(char)
-    end
+    end)
 end
 
 local function hookCharacterOverhead(char)
     if not char then return end
     applyOverheadVisuals(char)
+
+    if _G.QuantumTitleActive then
+        createQuantumTitleTag(char)
+        startQuantumTitleAnimation()
+    end
+
     if customOverheadConnection then pcall(function() customOverheadConnection:Disconnect() end) end
     customOverheadConnection = char.DescendantAdded:Connect(function(desc)
+        if desc.Name:find("QuantumHubTitle") then return end
         if desc:IsA("BillboardGui") or desc:IsA("TextLabel") or desc:IsA("Humanoid") then
-            task.wait(0.05)
-            applyOverheadVisuals(char)
+            task.defer(function()
+                pcall(function()
+                    if not desc or not desc.Parent or desc.Name:find("QuantumHubTitle") then return end
+                    applyOverheadVisuals(char)
+                end)
+            end)
         end
     end)
 end
@@ -2864,7 +2948,7 @@ local function setupChatSpoof()
 end
 
 local function ApplyCustomName(name)
-    if not name or name == "" then NotifyError("Custom Name", "Nama tidak boleh kosong!"); return end
+    if not name or name == "" then name = "QUANTUM" end
     _G.CustomNameActive = true
     _G.CustomNameText = name
     pcall(function() LocalPlayer.DisplayName = name end)
@@ -2878,11 +2962,11 @@ local function RemoveCustomName()
     pcall(function() LocalPlayer.DisplayName = originalDisplayName end)
     local char = LocalPlayer.Character
     if char then applyOverheadVisuals(char) end
-    NotifyInfo("Custom Name", "Nama asli dikembalikan.")
+    NotifyInfo("Custom Name", "Nama asli dikembalikan (" .. originalDisplayName .. ")")
 end
 
 local function ApplyCustomLevel(lvl)
-    if not lvl or lvl == "" then NotifyError("Custom Level", "Level tidak boleh kosong!"); return end
+    if not lvl or lvl == "" then lvl = "Lvl. 969" end
     _G.CustomLevelActive = true
     _G.CustomLevelText = lvl
     local char = LocalPlayer.Character
@@ -2894,28 +2978,20 @@ local function RemoveCustomLevel()
     _G.CustomLevelActive = false
     local char = LocalPlayer.Character
     if char then applyOverheadVisuals(char) end
-    NotifyInfo("Custom Level", "Fake level dinonaktifkan.")
+    NotifyInfo("Custom Level", "Level direset ke normal (" .. GetRealPlayerLevel() .. ")")
 end
 
 local function SetQuantumTitle(enabled)
     _G.QuantumTitleActive = enabled
     local char = LocalPlayer.Character
     if enabled then
-        if char then createQuantumTitleTag(char) end
-        startQuantumTitleAnimation()
-        NotifySuccess("Title Tag", "Quantum HUB Title diaktifkan!")
-    else
-        if _G.QuantumTitleRenderConn then
-            pcall(function() _G.QuantumTitleRenderConn:Disconnect() end)
-            _G.QuantumTitleRenderConn = nil
-        end
         if char then
-            for _, obj in pairs(char:GetDescendants()) do
-                if obj.Name == "QuantumHubTitleBillboard" then
-                    pcall(function() obj:Destroy() end)
-                end
-            end
+            createQuantumTitleTag(char)
+            startQuantumTitleAnimation()
         end
+        NotifySuccess("Title Tag", "Quantum HUB Title aktif! (Ultra Smooth)")
+    else
+        removeQuantumTitle()
         NotifyInfo("Title Tag", "Quantum HUB Title dimatikan.")
     end
 end
@@ -2924,14 +3000,20 @@ if customOverheadCharConnection then pcall(function() customOverheadCharConnecti
 customOverheadCharConnection = LocalPlayer.CharacterAdded:Connect(function(newChar)
     task.wait(0.5)
     hookCharacterOverhead(newChar)
-    if _G.QuantumTitleActive then
-        createQuantumTitleTag(newChar)
-    end
 end)
 
 if LocalPlayer.Character then
     hookCharacterOverhead(LocalPlayer.Character)
 end
+
+task.defer(function()
+    task.wait(1.5)
+    pcall(function()
+        if LocalPlayer.Character then
+            applyOverheadVisuals(LocalPlayer.Character)
+        end
+    end)
+end)
 
 setupChatSpoof()
 
@@ -3088,8 +3170,15 @@ if PlayersTab then
             Placeholder = "QUANTUM",
             Icon = "lucide:user-x",
             Callback = function(text)
-                customName = text
-            end, Finished = true
+                if text and text ~= "" then
+                    customName = text
+                    _G.CustomNameText = text
+                    if _G.CustomNameActive then
+                        ApplyCustomName(text)
+                    end
+                end
+            end,
+            Finished = false
         })
 
         Section_PlayersTab_3:AddInput("Input_CustomFakeLevel", {
@@ -3100,19 +3189,22 @@ if PlayersTab then
             Placeholder = "Lvl. 969",
             Icon = "lucide:bar-chart-2",
             Callback = function(text)
-                customLevel = text
-            end, Finished = true
+                if text and text ~= "" then
+                    customLevel = text
+                    _G.CustomLevelText = text
+                    if _G.CustomLevelActive then
+                        ApplyCustomLevel(text)
+                    end
+                end
+            end,
+            Finished = false
         })
 
         Section_PlayersTab_3:AddButton({
             Title = "Apply Name",
             Description = "Terapkan nama samaran ke overhead & chat",
             Callback = function()
-                if customName and customName ~= "" then
-                    ApplyCustomName(customName)
-                else
-                    NotifyError("Custom Name", "Masukkan nama dulu!")
-                end
+                ApplyCustomName(customName)
             end
         })
 
@@ -3128,11 +3220,7 @@ if PlayersTab then
             Title = "Apply Level",
             Description = "Terapkan level samaran secara terpisah",
             Callback = function()
-                if customLevel and customLevel ~= "" then
-                    ApplyCustomLevel(customLevel)
-                else
-                    NotifyError("Custom Level", "Masukkan level dulu!")
-                end
+                ApplyCustomLevel(customLevel)
             end
         })
 
