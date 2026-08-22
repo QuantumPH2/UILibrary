@@ -1223,140 +1223,42 @@ local function RestoreCharacterCollision(char)
     end
 end
 
-local function SmoothFlyTo(targetCFrame, duration, easingStyle)
-    local char = LocalPlayer.Character
-    if not char then return false end
-
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    local humanoid = char:FindFirstChild("Humanoid")
-    if not hrp then return false end
-
-    local targetCF = NormalizeTargetCFrame(targetCFrame)
-    if not targetCF then return false end
-
-    local startCF = hrp.CFrame
-    local distance = (startCF.Position - targetCF.Position).Magnitude
-    if distance < 0.5 then
-        pcall(function() char:PivotTo(targetCF) end)
-        return true
-    end
-
-    local wasNoclipped = _G.Noclip
-    _G.Noclip = true
-
-    local origAutoRotate = true
-    if humanoid then
-        origAutoRotate = humanoid.AutoRotate
-        humanoid.AutoRotate = false
-    end
-
-    local noclipConn = RunService.Heartbeat:Connect(function()
-        local c = LocalPlayer.Character
-        if not c then return end
-        local h = c:FindFirstChild("HumanoidRootPart")
-        if h then
-            pcall(function()
-                h.AssemblyLinearVelocity = Vector3.zero
-                h.AssemblyAngularVelocity = Vector3.zero
-            end)
-        end
-        for _, part in ipairs(c:GetDescendants()) do
-            if part:IsA("BasePart") then
-                pcall(function() part.CanCollide = false end)
-            end
-        end
-    end)
-
-    local finalDuration = duration or math.max(0.3, distance / 100)
-    local startTime = tick()
-
-    while tick() - startTime < finalDuration do
-        char = LocalPlayer.Character
-        if not char then break end
-        local currentHrp = char:FindFirstChild("HumanoidRootPart")
-        if not currentHrp then break end
-
-        local elapsed = tick() - startTime
-        local t = math.clamp(elapsed / finalDuration, 0, 1)
-
-        local alpha = -(math.cos(math.pi * t) - 1) / 2
-
-        local currentCF = startCF:Lerp(targetCF, alpha)
-        pcall(function() char:PivotTo(currentCF) end)
-
-        RunService.Heartbeat:Wait()
-    end
-
-    if noclipConn then noclipConn:Disconnect() end
-
-    char = LocalPlayer.Character
-    if char then
-        local currentHrp = char:FindFirstChild("HumanoidRootPart")
-        if currentHrp then
-            pcall(function()
-                currentHrp.AssemblyLinearVelocity = Vector3.zero
-                currentHrp.AssemblyAngularVelocity = Vector3.zero
-                char:PivotTo(targetCF)
-            end)
-        end
-
-        if humanoid then
-            humanoid.AutoRotate = origAutoRotate
-        end
-
-        RestoreCharacterCollision(char)
-    end
-
-    if not wasNoclipped then
-        _G.Noclip = false
-    end
-
-    return true
-end
-
 local function TeleportTo(targetCFrame, speed, options)
     local char = LocalPlayer.Character
     if not char then return false end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hrp = char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart
     if not hrp then return false end
     local targetCF = NormalizeTargetCFrame(targetCFrame)
     if not targetCF then return false end
-    local ok = pcall(function() char:PivotTo(targetCF) end)
+
+    pcall(function()
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+    end)
+
+    local ok = pcall(function()
+        hrp.CFrame = targetCF
+        char:PivotTo(targetCF)
+    end)
+
+    pcall(function()
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+    end)
+
     return ok
 end
 
+local function SmoothFlyTo(targetCFrame, duration, easingStyle)
+    return TeleportTo(targetCFrame)
+end
+
 local function FlyTo(targetCFrame, speed, options)
-    local char = LocalPlayer.Character
-    if not char then return false end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    local targetCF = NormalizeTargetCFrame(targetCFrame)
-    if not targetCF then return false end
-    local distance = (hrp.Position - targetCF.Position).Magnitude
-    if distance < 1 then
-        pcall(function() char:PivotTo(targetCF) end)
-        return true
-    end
-    local effectiveSpeed = speed or 120
-    local duration = math.clamp(distance / effectiveSpeed, 0.15, 6)
-    return SmoothFlyTo(targetCF, duration)
+    return TeleportTo(targetCFrame)
 end
 
 local function FlySlowlyTo(targetCFrame, speed, options)
-    local effectiveSpeed = speed or 30
-    local char = LocalPlayer.Character
-    if not char then return false end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-    local targetCF = NormalizeTargetCFrame(targetCFrame)
-    if not targetCF then return false end
-    local distance = (hrp.Position - targetCF.Position).Magnitude
-    if distance < 0.5 then
-        pcall(function() char:PivotTo(targetCF) end)
-        return true
-    end
-    local duration = math.max(0.3, distance / effectiveSpeed)
-    return SmoothFlyTo(targetCF, duration, Enum.EasingStyle.Linear)
+    return TeleportTo(targetCFrame)
 end
 
 local function teleportTo(locationName)
@@ -1996,7 +1898,7 @@ local function createAndTeleportToPlatform(targetPos, y)
 
     pcall(function() SetWalkOnWater(true) end)
 
-    FlyTo(CFrame.new(createdEventPlatform.Position + Vector3.new(0, 2, 0)))
+    TeleportTo(CFrame.new(createdEventPlatform.Position + Vector3.new(0, 2, 0)))
 end
 
 local function runMultiEventTP()
@@ -2791,9 +2693,9 @@ local function RunAutoEvent()
                 local hrp = getHRP(); if not hrp then return end
                 local zones = workspace:FindFirstChild("Zones"); if not zones then return end
                 local lev = zones:FindFirstChild("Leviathan's Den")
-                if lev then FlyTo(CFrame.new(3474.053, -287.775, 3472.634)); task.wait(1) end
+                if lev then TeleportTo(CFrame.new(3474.053, -287.775, 3472.634)); task.wait(1) end
                 local thunder = zones:FindFirstChild("Ancient Jungle")
-                if thunder then FlyTo(CFrame.new(2067.866, 2.028, 10.831)); task.wait(1) end
+                if thunder then TeleportTo(CFrame.new(2067.866, 2.028, 10.831)); task.wait(1) end
             end)
             task.wait(5)
         end
@@ -4541,7 +4443,7 @@ if MainTab then
 
                 local hrp = getHRP()
                 if hrp then
-                    FlyTo(CFrame.new(SECOND_ALTAR_POS, SECOND_ALTAR_POS + SECOND_ALTAR_LOOK) * CFrame.new(0, 0.5, 0))
+                    TeleportTo(CFrame.new(SECOND_ALTAR_POS, SECOND_ALTAR_POS + SECOND_ALTAR_LOOK) * CFrame.new(0, 0.5, 0))
                 end
                 task.wait(1)
                 while _G_SecondEnchant.makeStoneState and createdCount < _G_SecondEnchant.targetStoneAmount do
@@ -4598,7 +4500,7 @@ if MainTab then
                 task.wait(0.5)
                 local hrp = getHRP()
                 if hrp then
-                    FlyTo(CFrame.new(SECOND_ALTAR_POS, SECOND_ALTAR_POS + SECOND_ALTAR_LOOK) * CFrame.new(0, 0.5, 0))
+                    TeleportTo(CFrame.new(SECOND_ALTAR_POS, SECOND_ALTAR_POS + SECOND_ALTAR_LOOK) * CFrame.new(0, 0.5, 0))
                 end
                 task.wait(1.5)
                 NotifySuccess("2nd Enchant", "Rolling slot ke-2...")
@@ -4833,7 +4735,7 @@ if MainTab then
                 Callback = function()
                     local hrp = getHRP()
                     if hrp then
-                        FlyTo(CFrame.new(SECOND_ALTAR_POS, SECOND_ALTAR_POS + SECOND_ALTAR_LOOK) * CFrame.new(0, 0.5, 0))
+                        TeleportTo(CFrame.new(SECOND_ALTAR_POS, SECOND_ALTAR_POS + SECOND_ALTAR_LOOK) * CFrame.new(0, 0.5, 0))
                         NotifySuccess("TP", "Berhasil ke Second Altar!")
                     end
                 end
@@ -5279,7 +5181,7 @@ if MainTab then
             local targetPart = lucid.PrimaryPart or lucid:FindFirstChildWhichIsA("BasePart")
             if not targetPart then NotifyError("Divine Power", "NPC Lucid tidak punya primary part!"); return false end
             NotifyInfo("Divine Power", "Teleport ke Lucid...")
-            FlyTo(targetPart.CFrame * CFrame.new(0, 3, 0))
+            TeleportTo(targetPart.CFrame * CFrame.new(0, 3, 0))
             task.wait(0.6)
             pcall(function()
                 local prompt, click = findPirateChestInteraction(lucid)
@@ -5303,7 +5205,7 @@ if MainTab then
                 task.wait(0.6)
             end
             task.wait(1)
-            if savedCFrame then FlyTo(savedCFrame) end
+            if savedCFrame then TeleportTo(savedCFrame) end
             if claimed then
                 NotifySuccess("Divine Power", "Berhasil claim divine power! Kembali ke posisi semula.")
                 return true
@@ -5389,8 +5291,8 @@ if MainTab then
         })
 
         local Section_MainTab_8 = MainTab:AddSection("Event Teleport")
-        Section_MainTab_8:AddButton({ Title = "TP Leviathan", Callback = function() local hrp = getHRP(); if hrp then FlyTo(CFrame.new(3474.053,-287.775,3472.634)) end end })
-        Section_MainTab_8:AddButton({ Title = "TP Thunderzilla", Callback = function() local hrp = getHRP(); if hrp then FlyTo(CFrame.new(2067.866,2.028,10.831)) end end })
+        Section_MainTab_8:AddButton({ Title = "TP Leviathan", Callback = function() local hrp = getHRP(); if hrp then TeleportTo(CFrame.new(3474.053,-287.775,3472.634)) end end })
+        Section_MainTab_8:AddButton({ Title = "TP Thunderzilla", Callback = function() local hrp = getHRP(); if hrp then TeleportTo(CFrame.new(2067.866,2.028,10.831)) end end })
     end)
 end
 
@@ -6040,7 +5942,7 @@ if MainTab then
             local standPos = targetPos + Vector3.new(0, 1.2, 3.2)
             local lookCF = CFrame.lookAt(standPos, targetPos)
 
-            FlySlowlyTo(lookCF, 30)
+            TeleportTo(lookCF)
             task.wait(0.2)
 
             if _G.axeUuid and _G.axeUuid ~= "" and Events.equipItem then
@@ -6302,14 +6204,14 @@ if MainTab then
             local hrp = getHRP()
             if not hrp then return false end
 
-            NotifyInfo("Veilshard", "Flying to crystal " .. crystalIndex .. "/" .. totalCrystals .. "...")
+            NotifyInfo("Veilshard", "Teleporting to crystal " .. crystalIndex .. "/" .. totalCrystals .. "...")
 
             local highTarget = crystalData.CFrame * CFrame.new(0, 12, 0)
-            FlySlowlyTo(highTarget, 25)
-            task.wait(0.8)
+            TeleportTo(highTarget)
+            task.wait(0.2)
 
             local mineTarget = crystalData.CFrame * CFrame.new(0, 4, 0)
-            FlySlowlyTo(mineTarget, 25)
+            TeleportTo(mineTarget)
             task.wait(0.2)
 
             if _G.veilshardAxeUuid ~= "" and Events.equipItem then
@@ -6332,7 +6234,7 @@ if MainTab then
 
         Section_MainTab_10:AddButton({
             Title = "Manual Mine Veilshard",
-            Description = "Fly ke Lava Basin & mining semua crystal (Anti-Detect)",
+            Description = "Teleport ke Lava Basin & mining semua crystal (Anti-Detect)",
             Callback = function()
                 if not _G.veilshardAxeUuid or _G.veilshardAxeUuid == "" then
                     getVeilshardAxeUUID()
@@ -6375,7 +6277,7 @@ if MainTab then
 
         Section_MainTab_10:AddToggle("Toggle_AutoMineVeilshard", {
             Title = "Auto Mine Veilshard",
-            Description = "Otomatis fly ke Lava Basin & mining crystal (Anti-Detect loop)",
+            Description = "Otomatis teleport ke Lava Basin & mining crystal (Anti-Detect loop)",
             Default = false,
             Callback = function(state)
                 _G.VeilshardMiningActive = state
@@ -6476,7 +6378,7 @@ if MainTab then
                         end
                         NotifyInfo("Veilshard", "Auto mining dihentikan.")
                     end)
-                    NotifySuccess("Veilshard", "Auto mining aktif! Anti-Detect Fly Mode.")
+                    NotifySuccess("Veilshard", "Auto mining aktif! Anti-Detect Teleport Mode.")
                 else
                     _G.isVeilshardMining = false
                     if _G.VeilshardMiningThread then
@@ -7053,86 +6955,7 @@ if MainTab then
         end
 
         local function MixTotemSmoothFly(targetCF, duration)
-            local char = LocalPlayer.Character
-            if not char then return false end
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if not hrp then return false end
-
-            local startCF = hrp.CFrame
-            local dist = (startCF.Position - targetCF.Position).Magnitude
-            if dist < 0.5 then
-                pcall(function() char:PivotTo(targetCF) end)
-                return true
-            end
-
-            local wasNoclipped = _G.Noclip
-            _G.Noclip = true
-
-            local origAutoRotate = true
-            if humanoid then
-                origAutoRotate = humanoid.AutoRotate
-                humanoid.AutoRotate = false
-            end
-
-            local noclipConn = RunService.Heartbeat:Connect(function()
-                local c = LocalPlayer.Character
-                if not c then return end
-                local h = c:FindFirstChild("HumanoidRootPart")
-                if h then
-                    pcall(function()
-                        h.AssemblyLinearVelocity = Vector3.zero
-                        h.AssemblyAngularVelocity = Vector3.zero
-                    end)
-                end
-                for _, part in ipairs(c:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        pcall(function() part.CanCollide = false end)
-                    end
-                end
-            end)
-
-            local finalDuration = duration or math.clamp(dist / 90, 0.25, 0.75)
-            local startTime = tick()
-
-            while tick() - startTime < finalDuration do
-                char = LocalPlayer.Character
-                if not char then break end
-                local currentHrp = char:FindFirstChild("HumanoidRootPart")
-                if not currentHrp then break end
-
-                local elapsed = tick() - startTime
-                local t = math.clamp(elapsed / finalDuration, 0, 1)
-                local alpha = -(math.cos(math.pi * t) - 1) / 2
-
-                local currentCF = startCF:Lerp(targetCF, alpha)
-                pcall(function() char:PivotTo(currentCF) end)
-
-                RunService.Heartbeat:Wait()
-            end
-
-            if noclipConn then noclipConn:Disconnect() end
-
-            char = LocalPlayer.Character
-            if char then
-                local currentHrp = char:FindFirstChild("HumanoidRootPart")
-                if currentHrp then
-                    pcall(function()
-                        currentHrp.AssemblyLinearVelocity = Vector3.zero
-                        currentHrp.AssemblyAngularVelocity = Vector3.zero
-                        char:PivotTo(targetCF)
-                    end)
-                end
-                if humanoid then
-                    humanoid.AutoRotate = origAutoRotate
-                end
-            end
-
-            if not wasNoclipped then
-                _G.Noclip = false
-            end
-
-            return true
+            return TeleportTo(targetCF)
         end
 
         local function DropTotemAtPosition(totemUUID, targetCFrame, index)
@@ -7152,7 +6975,7 @@ if MainTab then
             table.insert(_mixTotemBaseplates, baseplate)
 
             local flyTarget = targetCFrame * CFrame.new(0, 0.5, 0)
-            MixTotemSmoothFly(flyTarget)
+            TeleportTo(flyTarget)
             task.wait(0.1)
 
             local movedHrp = getHRP()
@@ -7204,7 +7027,7 @@ if MainTab then
 
         Section_MainTab_13:AddToggle("Toggle_AutoMix3TotemBETA", {
             Title = "Auto Mix 3 Totem [BETA]",
-            Description = "Smooth Noclip Fly -> Pasang 3 totem minimal jarak -> Kembali ke posisi awal",
+            Description = "Fast Teleport -> Pasang 3 totem minimal jarak -> Kembali ke posisi awal",
             Default = false,
             Callback = function(v)
                 Config.AutoMixTotem = v
@@ -7223,7 +7046,7 @@ if MainTab then
                             local startCFrame = hrp.CFrame
                             local RITUAL_SPOTS = GetMixTotemSpots(startCFrame)
 
-                            NotifyInfo("Mix Totem", "Memulai ritual 3 totem (Smooth Fly & Noclip)...")
+                            NotifyInfo("Mix Totem", "Memulai ritual 3 totem (Fast Teleport)...")
                             ClearMixTotemBaseplates()
 
                             for i, config in ipairs(MIX_CONFIG) do
@@ -7263,7 +7086,7 @@ if MainTab then
 
                             if Config.AutoMixTotem then
                                 NotifyInfo("Mix Totem", "Kembali ke posisi awal...")
-                                MixTotemSmoothFly(startCFrame)
+                                TeleportTo(startCFrame)
                                 ClearMixTotemBaseplates()
                                 _G.Noclip = false
                                 RestoreCharacterCollision(LocalPlayer.Character)
@@ -7559,7 +7382,7 @@ if FlyTab then
                 end
                 local hrp = getHRP()
                 if not hrp then return end
-                FlyTo(npcTeleportData.SelectedNPC.CFrame * CFrame.new(0, 3, 0))
+                TeleportTo(npcTeleportData.SelectedNPC.CFrame * CFrame.new(0, 3, 0))
                 NotifySuccess("NPC", "Teleport ke " .. npcTeleportData.SelectedNPC.Name .. "!")
             end
         })
@@ -7864,8 +7687,8 @@ if ShopTab then
             local blackMarketCFrame = LOCATIONS["Black Market"]
             if blackMarketCFrame then
                 NotifyInfo("Black Market", "Teleporting ke Black Market...")
-                SmoothFlyTo(blackMarketCFrame, 1.5)
-                task.wait(0.5)
+                TeleportTo(blackMarketCFrame)
+                task.wait(0.3)
             end
 
             quantity = math.clamp(tonumber(quantity) or 1, 1, 99)
@@ -7897,8 +7720,8 @@ if ShopTab then
                 local blackMarketCFrame = LOCATIONS["Black Market"]
                 if blackMarketCFrame then
                     NotifyInfo("Black Market", "Teleporting ke Black Market...")
-                    SmoothFlyTo(blackMarketCFrame, 1.5)
-                    task.wait(0.5)
+                    TeleportTo(blackMarketCFrame)
+                    task.wait(0.3)
                 end
 
                 while BM.AutoBuyActive do
@@ -9052,7 +8875,7 @@ if QuestTab then
             Callback = function()
                 pcall(function()
                     local hrp = getHRP()
-                    if hrp then FlyTo(CFrame.new(2139.544677734375, -91.19776916503906, -766.829833984375)) end
+                    if hrp then TeleportTo(CFrame.new(2139.544677734375, -91.19776916503906, -766.829833984375)) end
                     NotifySuccess("Element", "Teleported to Underground Cellar!")
                 end)
             end
@@ -9063,7 +8886,7 @@ if QuestTab then
             Callback = function()
                 pcall(function()
                     local hrp = getHRP()
-                    if hrp then FlyTo(CFrame.new(1479.587, 128.295, -604.224)) end
+                    if hrp then TeleportTo(CFrame.new(1479.587, 128.295, -604.224)) end
                     NotifySuccess("Element", "Teleported to Temple Guardian!")
                 end)
             end
