@@ -361,7 +361,7 @@ G.DistH = function(I, e)
 		return (Root.Position - (I:FindFirstChild("HumanoidRootPart")).Position).Magnitude > e;
 	end;
 
-_G.MobHeight = _G.MobHeight or 20
+_G.MobHeight = _G.MobHeight or 15
 
 G.Kill = function(I, e)
 	if not (I and e) then return end
@@ -376,14 +376,14 @@ G.Kill = function(I, e)
 	PosMon = (I:GetAttribute("Locked")).Position
 
 	_B = true
-	BringEnemy()
+	BringEnemy(I)
 
 	EquipWeapon(_G.SelectWeapon)
 
 	local tool = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
 	if not tool then return end
 
-	_tp(hrp.CFrame * CFrame.new(0, _G.MobHeight, 0))
+	_tp(hrp.CFrame * CFrame.new(0, _G.MobHeight or 15, 0))
 end
 G.Kill2 = function(I, e)
 		if I and e then
@@ -609,7 +609,7 @@ local function IsRaidMob(mob)
     return false
 end
 
-BringEnemy = function()
+BringEnemy = function(targetMob)
     if not FarmAtivo() or not _B then return end
 
     local plr = game.Players.LocalPlayer
@@ -619,39 +619,38 @@ BringEnemy = function()
 
     pcall(function()
         sethiddenproperty(plr, "SimulationRadius", math.huge)
+        sethiddenproperty(plr, "MaxSimulationRadius", math.huge)
+        if setsimulationradius then
+            setsimulationradius(math.huge, math.huge)
+        end
     end)
 
-    local targetPos = PosMon or hrp.Position
+    local targetName = targetMob and targetMob.Name
+    local targetPos = PosMon or (targetMob and targetMob:FindFirstChild("HumanoidRootPart") and targetMob.HumanoidRootPart.Position) or hrp.Position
     local enemies = workspace.Enemies:GetChildren()
     local count = 0
 
     for _, mob in ipairs(enemies) do
-        if count >= _G.MaxBringMobs then break end
+        if count >= (_G.MaxBringMobs or 4) then break end
 
         local hum = mob:FindFirstChild("Humanoid")
         local root = mob:FindFirstChild("HumanoidRootPart")
 
         if hum and root and hum.Health > 0 and not IsRaidMob(mob) then
-            local dist = (root.Position - targetPos).Magnitude
+            if not targetName or mob.Name == targetName then
+                local dist = (root.Position - targetPos).Magnitude
 
-            if dist <= _G.BringRange and not root:GetAttribute("Tweening") then
-                count = count + 1
-                root:SetAttribute("Tweening", true)
-                root.CanCollide = false
-
-                local tween = TweenService:Create(
-                    root,
-                    TweenInfoBring,
-                    { CFrame = CFrame.new(targetPos) }
-                )
-
-                tween:Play()
-                tween.Completed:Once(function()
-                    if root then
-                        root:SetAttribute("Tweening", false)
-                        root.CanCollide = false
+                if dist <= (_G.BringRange or 235) and dist > 4 and mob ~= targetMob then
+                    count = count + 1
+                    root.CanCollide = false
+                    if root:FindFirstChild("BodyVelocity") then
+                        pcall(function() root.BodyVelocity:Destroy() end)
                     end
-                end)
+                    root.CFrame = CFrame.new(targetPos)
+                    root.Velocity = Vector3.zero
+                    root.RotVelocity = Vector3.zero
+                    hum.WalkSpeed = 0
+                end
             end
         end
     end
@@ -4179,27 +4178,91 @@ spawn(function()
 	end;
 end);
 
+local function GetAllChests()
+    local foundChests = {}
+    local seen = {}
+    local CollectionService = game:GetService("CollectionService")
+
+    pcall(function()
+        for _, chest in pairs(CollectionService:GetTagged("_ChestTagged")) do
+            if chest and (chest:IsA("BasePart") or chest:IsA("Model")) and not seen[chest] then
+                local part = chest:IsA("BasePart") and chest or chest:FindFirstChildWhichIsA("BasePart")
+                if part and part.Transparency < 1 then
+                    seen[chest] = true
+                    table.insert(foundChests, part)
+                end
+            end
+        end
+    end)
+
+    pcall(function()
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if (obj.Name:find("Chest") or obj:GetAttribute("IsChest")) and not seen[obj] then
+                local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+                if part and part.Transparency < 1 then
+                    seen[obj] = true
+                    table.insert(foundChests, part)
+                end
+            end
+        end
+    end)
+
+    return foundChests
+end
+
 spawn(function()
-    while wait(Sec) do
+    local collectedChests = {}
+    while task.wait(0.1) do
         if _G.AutoFarmChest then
             pcall(function()
-                local CollectionService = game:GetService("CollectionService")
-                local Players = game:GetService("Players")
-                local plrChar = Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()
-                local d = plrChar:GetPivot().Position
-                local Chests = CollectionService:GetTagged("_ChestTagged")
-                local minDist, nearestChest = math.huge, nil
-                for _, chest in pairs(Chests) do
-                    local dist = (chest:GetPivot().Position - d).Magnitude
-                    if not SelectedIsland or chest:IsDescendantOf(SelectedIsland) then
-                        if not chest:GetAttribute("IsDisabled") and dist < minDist then
-                            minDist = dist
+                local plr = game.Players.LocalPlayer
+                local char = plr.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+
+                local allChests = GetAllChests()
+                local nearestChest = nil
+                local shortestDist = math.huge
+
+                for _, chest in ipairs(allChests) do
+                    if chest and chest.Parent and chest.Transparency < 1 and not collectedChests[chest] then
+                        local chestPos = chest.Position
+                        local dist = (chestPos - hrp.Position).Magnitude
+                        if dist < shortestDist then
+                            shortestDist = dist
                             nearestChest = chest
                         end
                     end
                 end
-                if nearestChest then
-                    _tp(nearestChest:GetPivot())
+
+                if nearestChest and nearestChest.Parent and _G.AutoFarmChest then
+                    local chestPos = nearestChest.Position
+                    local timeout = 0
+                    repeat
+                        task.wait()
+                        timeout = timeout + 1
+                        _tp(CFrame.new(chestPos))
+
+                        if firetouchinterest then
+                            pcall(function()
+                                firetouchinterest(hrp, nearestChest, 0)
+                                task.wait()
+                                firetouchinterest(hrp, nearestChest, 1)
+                            end)
+                        end
+
+                        if (hrp.Position - chestPos).Magnitude <= 5 or nearestChest.Transparency >= 1 or not nearestChest.Parent then
+                            break
+                        end
+                    until not _G.AutoFarmChest or timeout > 30 or nearestChest.Transparency >= 1 or not nearestChest.Parent
+
+                    collectedChests[nearestChest] = tick()
+                else
+                    for c, t in pairs(collectedChests) do
+                        if tick() - t > 25 then
+                            collectedChests[c] = nil
+                        end
+                    end
                 end
             end)
         end
