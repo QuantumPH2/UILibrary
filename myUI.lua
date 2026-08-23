@@ -298,22 +298,54 @@ local w = {
 		["Ghost"] = CFrame.new(5251, 5, 1111),
 	};
 EquipWeapon = function(I)
-		if not I then
-			return;
-		end;
-		if plr.Backpack:FindFirstChild(I) then
-			plr.Character.Humanoid:EquipTool(plr.Backpack:FindFirstChild(I));
-		end;
-	end;
+    local char = plr.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    local equippedTool = char:FindFirstChildOfClass("Tool")
+    if equippedTool then
+        if not I or I == "" or I == "Melee" or I == "Sword" or I == "Blox Fruit" or I == "Gun" then
+            if not I or I == "" or equippedTool.ToolTip == I then
+                return equippedTool
+            end
+        elseif equippedTool.Name == I then
+            return equippedTool
+        end
+    end
+
+    local targetTool = nil
+    if I and I ~= "" then
+        targetTool = plr.Backpack:FindFirstChild(I)
+        if not targetTool then
+            for _, t in ipairs(plr.Backpack:GetChildren()) do
+                if t:IsA("Tool") and (t.ToolTip == I or t.Name == I) then
+                    targetTool = t
+                    break
+                end
+            end
+        end
+    end
+
+    if not targetTool then
+        for _, t in ipairs(plr.Backpack:GetChildren()) do
+            if t:IsA("Tool") and (t.ToolTip == "Melee" or t.ToolTip == "Sword" or t.ToolTip == "Blox Fruit") then
+                targetTool = t
+                break
+            end
+        end
+    end
+
+    if targetTool then
+        hum:EquipTool(targetTool)
+        return targetTool
+    end
+
+    return equippedTool
+end;
 weaponSc = function(I)
-		for e, K in pairs(plr.Backpack:GetChildren()) do
-			if K:IsA("Tool") then
-				if K.ToolTip == I then
-					EquipWeapon(K.Name);
-				end;
-			end;
-		end;
-	end;
+    EquipWeapon(I)
+end;
 hookfunction(require((game:GetService("ReplicatedStorage")).Effect.Container.Death), function()
 
 end);
@@ -363,9 +395,12 @@ _G.MobHeight = _G.MobHeight or 20
 
 local function FaceTarget(targetPos)
     local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    local dir = (targetPos - hrp.Position).Unit
-    hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(dir.X, 0, dir.Z))
+    if not hrp or not targetPos then return end
+    local diff = targetPos - hrp.Position
+    local dirXZ = Vector3.new(diff.X, 0, diff.Z)
+    if dirXZ.Magnitude > 0.01 then
+        hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + dirXZ.Unit)
+    end
 end
 
 local function PerformAttack(targetHRP)
@@ -377,8 +412,7 @@ local function PerformAttack(targetHRP)
 
     local tool = char:FindFirstChildOfClass("Tool")
     if not tool then
-        EquipWeapon(_G.SelectWeapon or "Melee")
-        tool = char:FindFirstChildOfClass("Tool")
+        tool = EquipWeapon(_G.ChooseWP or _G.SelectWeapon or "Melee")
     end
     if not tool then return end
 
@@ -403,14 +437,6 @@ local function PerformAttack(targetHRP)
                 end
             end
         end)
-
-        pcall(function()
-            if vim2 then
-                local pos = targetHRP.Position
-                local vp = workspace.CurrentCamera:WorldToScreenPoint(pos)
-                vim2:ClickButton1(Vector2.new(vp.X, vp.Y))
-            end
-        end)
     end
 end
 
@@ -429,9 +455,9 @@ G.Kill = function(mob, active)
     PosMon = (mob:GetAttribute("Locked")).Position
 
     _B = true
-    BringEnemy()
+    BringEnemy(mob.Name)
 
-    EquipWeapon(_G.SelectWeapon)
+    EquipWeapon(_G.ChooseWP or _G.SelectWeapon or "Melee")
 
     local attackCFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 0)
 
@@ -455,13 +481,16 @@ G.Kill2 = function(I, e)
         I:SetAttribute("Locked", hrp.CFrame)
     end
     PosMon = (I:GetAttribute("Locked")).Position
-    BringEnemy()
-    EquipWeapon(_G.SelectWeapon)
+    BringEnemy(I.Name)
+    EquipWeapon(_G.ChooseWP or _G.SelectWeapon or "Melee")
 
     local tool = plr.Character and plr.Character:FindFirstChildOfClass("Tool")
+    if not tool then
+        tool = EquipWeapon(_G.ChooseWP or _G.SelectWeapon or "Melee")
+    end
     if not tool then return end
 
-    local myHRP = plr.Character:FindFirstChild("HumanoidRootPart")
+    local myHRP = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
     if not myHRP then return end
 
     local tip = tool.ToolTip or ""
@@ -485,8 +514,8 @@ G.KillSea = function(I, e)
         I:SetAttribute("Locked", hrp.CFrame)
     end
     PosMon = (I:GetAttribute("Locked")).Position
-    BringEnemy()
-    EquipWeapon(_G.SelectWeapon)
+    BringEnemy(I.Name)
+    EquipWeapon(_G.ChooseWP or _G.SelectWeapon or "Melee")
 
     local myHRP = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
     if not myHRP then return end
@@ -699,14 +728,13 @@ end
 -- BRING ENEMY: Tarik mob ke posisi player (instant, ringan)
 -- Dipanggil on-demand dari G.Kill, bukan background loop
 -- ============================================================
-BringEnemy = function()
+BringEnemy = function(targetName)
     if not _B then return end
 
     local char = plr.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- Set simulasi radius agar mob bisa digerakkan
     pcall(function()
         sethiddenproperty(plr, "SimulationRadius", math.huge)
     end)
@@ -716,22 +744,31 @@ BringEnemy = function()
     local count = 0
 
     for _, mob in ipairs(enemies) do
-        if count >= _G.MaxBringMobs then break end
+        if count >= (_G.MaxBringMobs or 3) then break end
 
         local hum = mob:FindFirstChild("Humanoid")
         local root = mob:FindFirstChild("HumanoidRootPart")
 
         if hum and root and hum.Health > 0 and not IsRaidMob(mob) then
-            local dist = (root.Position - targetPos).Magnitude
+            local match = true
+            if targetName and targetName ~= "" then
+                match = (mob.Name == targetName) or string.find(mob.Name, targetName) or string.find(targetName, mob.Name)
+            end
 
-            if dist <= _G.BringRange then
-                count += 1
-                -- Instant pull: tidak pakai tween agar tidak numpuk
-                pcall(function()
-                    root.CFrame = CFrame.new(targetPos + Vector3.new(
-                        math.random(-5, 5), 0, math.random(-5, 5)
-                    ))
-                end)
+            if match then
+                local dist = (root.Position - targetPos).Magnitude
+
+                if dist <= (_G.BringRange or 235) then
+                    count += 1
+                    pcall(function()
+                        root.CanCollide = false
+                        root.Velocity = Vector3.zero
+                        root.RotVelocity = Vector3.zero
+                        root.CFrame = CFrame.new(targetPos + Vector3.new(
+                            math.random(-3, 3), 0, math.random(-3, 3)
+                        ))
+                    end)
+                end
             end
         end
     end
@@ -1089,7 +1126,7 @@ function stopTween()
         local hrp = char:FindFirstChild("HumanoidRootPart")
         if hrp then
             for _, child in ipairs(hrp:GetChildren()) do
-                if child.Name == "FarmBV" or child.Name == "BodyClip" or child:IsA("BodyVelocity") or child:IsA("BodyGyro") then
+                if child.Name == "FarmBV" or child.Name == "FarmBG" or child.Name == "BodyClip" or child:IsA("BodyVelocity") or child:IsA("BodyGyro") then
                     child:Destroy()
                 end
             end
@@ -1131,6 +1168,18 @@ Services.RunService.Stepped:Connect(function()
                     bv.Parent = hrp
                 end
 
+                local bg = hrp:FindFirstChild("FarmBG")
+                if not bg then
+                    bg = Instance.new("BodyGyro")
+                    bg.Name = "FarmBG"
+                    bg.MaxTorque = Vector3.new(9e5, 9e5, 9e5)
+                    bg.P = 9e4
+                    bg.CFrame = hrp.CFrame
+                    bg.Parent = hrp
+                else
+                    bg.CFrame = hrp.CFrame
+                end
+
                 if shouldTween then
                     bv.MaxForce = Vector3.zero
                     hrp.Velocity = Vector3.zero
@@ -1140,6 +1189,11 @@ Services.RunService.Stepped:Connect(function()
                     bv.Velocity = Vector3.zero
                 end
             end
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                hum.Sit = false
+                hum.PlatformStand = false
+            end
         end
     else
         local char = plr.Character
@@ -1148,6 +1202,8 @@ Services.RunService.Stepped:Connect(function()
             if hrp then
                 local bv = hrp:FindFirstChild("FarmBV")
                 if bv then bv:Destroy() end
+                local bg = hrp:FindFirstChild("FarmBG")
+                if bg then bg:Destroy() end
                 local oldBv = hrp:FindFirstChild("BodyClip")
                 if oldBv then oldBv:Destroy() end
             end
@@ -2297,8 +2353,8 @@ function FastAttack1:GetNearestEnemies()
     local function ProcessFolder(folder)
         if not folder then return BasePart end
         for _, enemy in ipairs(folder:GetChildren()) do
-            local head = enemy:FindFirstChild("Head")
-            if head and IsAlive(enemy) and enemy ~= Player.Character then
+            local head = enemy:FindFirstChild("Head") or enemy:FindFirstChild("HumanoidRootPart")
+            if head and IsAlive(enemy) and enemy ~= Player.Character and not Players:GetPlayerFromCharacter(enemy) then
                 local dist = (Player.Character.HumanoidRootPart.Position - head.Position).Magnitude
                 if dist < FastAttack1.Distance then
                     table.insert(OthersEnemies, { enemy, head })
@@ -2332,8 +2388,8 @@ function FastAttack2:AttackNearest()
     local function ProcessFolder(folder)
         if not folder then return nil end
         for _, enemy in ipairs(folder:GetChildren()) do
-            local head = enemy:FindFirstChild("Head")
-            if head and IsAlive(enemy) and enemy ~= Player.Character then
+            local head = enemy:FindFirstChild("Head") or enemy:FindFirstChild("HumanoidRootPart")
+            if head and IsAlive(enemy) and enemy ~= Player.Character and not Players:GetPlayerFromCharacter(enemy) then
                 local dist = (Player.Character.HumanoidRootPart.Position - head.Position).Magnitude
                 if dist < FastAttack2.Distance then
                     table.insert(OthersEnemies, { enemy, head })
@@ -2390,9 +2446,11 @@ function StartAttacksWithMode(mode)
     _G.AutoClickLoop = task.spawn(function()
         while _G.Settings.AutoClick do
             local char = Player.Character
-            if char and IsAlive(char) and char:FindFirstChildOfClass("Tool") then
-                game:GetService("VirtualUser"):CaptureController()
-                game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+            if char and IsAlive(char) then
+                local tool = char:FindFirstChildOfClass("Tool")
+                if tool then
+                    pcall(function() tool:Activate() end)
+                end
             end
             task.wait(0.1)
         end
@@ -3162,24 +3220,36 @@ task.spawn(function()
 end)
 
 v2:AddSection("Auto Farm main")
+_G.ChooseWP = GetSetting("ChooseWP_Save", "Melee")
+_G.SelectWeapon = _G.ChooseWP
+
 v2:AddDropdown("SelectWeapon", {
     Title = "Select Weapon",
     Values = {"Melee","Sword","Blox Fruit","Gun"},
-    Default = "Melee",
+    Default = GetSetting("ChooseWP_Save", "Melee"),
     Multi = false,
     Callback = function(I)
         _G.ChooseWP = I
+        _G.SelectWeapon = I
+        _G.SaveData["ChooseWP_Save"] = I
+        SaveSettings()
     end,
 })
 
 spawn(function()
     while wait(Sec) do
         pcall(function()
+            local wpType = _G.ChooseWP or "Melee"
             for _, e in pairs(plr.Backpack:GetChildren()) do
-                if e.ToolTip == _G.ChooseWP then
-                    if plr.Backpack:FindFirstChild(e.Name) then
-                        _G.SelectWeapon = e.Name
-                    end
+                if e:IsA("Tool") and e.ToolTip == wpType then
+                    _G.SelectWeapon = e.Name
+                    break
+                end
+            end
+            if plr.Character then
+                local e = plr.Character:FindFirstChildOfClass("Tool")
+                if e and e.ToolTip == wpType then
+                    _G.SelectWeapon = e.Name
                 end
             end
         end)
@@ -3465,14 +3535,32 @@ local function GetNearestMob(TargetName)
     local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
     if not root then return nil end
     local closest, closestDist = nil, math.huge
-    for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-        if G.Alive(mob) and mob.Name == TargetName and mob:FindFirstChild("HumanoidRootPart") then
-            local d = (mob.HumanoidRootPart.Position - root.Position).Magnitude
-            if d < closestDist then
-                closestDist = d
-                closest = mob
+
+    local function scanFolder(folder)
+        if not folder then return end
+        for _, mob in ipairs(folder:GetChildren()) do
+            if G.Alive(mob) and mob:FindFirstChild("HumanoidRootPart") then
+                local isMatch = false
+                if not TargetName or TargetName == "" then
+                    isMatch = true
+                elseif mob.Name == TargetName or string.find(mob.Name, TargetName) or string.find(TargetName, mob.Name) then
+                    isMatch = true
+                end
+
+                if isMatch and not Players:GetPlayerFromCharacter(mob) then
+                    local d = (mob.HumanoidRootPart.Position - root.Position).Magnitude
+                    if d < closestDist then
+                        closestDist = d
+                        closest = mob
+                    end
+                end
             end
         end
+    end
+
+    scanFolder(workspace:FindFirstChild("Enemies"))
+    if not closest then
+        scanFolder(workspace:FindFirstChild("Characters"))
     end
     return closest
 end
@@ -3508,9 +3596,23 @@ task.spawn(function()
             if not data then _levelFarmBusy = false return end
 
             local QuestUI = plr.PlayerGui and plr.PlayerGui:FindFirstChild("Main") and plr.PlayerGui.Main:FindFirstChild("Quest")
-            local hasQuest = QuestUI and QuestUI.Visible
+            local hasQuest = false
+            if QuestUI and QuestUI.Visible then
+                local questTitleObj = QuestUI:FindFirstChild("Container") and QuestUI.Container:FindFirstChild("QuestTitle") and QuestUI.Container.QuestTitle:FindFirstChild("Title")
+                if questTitleObj and questTitleObj.Text and questTitleObj.Text ~= "" then
+                    local title = questTitleObj.Text
+                    if string.find(title, data.Name) or string.find(title, data.DisplayName) or (data.DisplayName and string.find(data.DisplayName, title)) then
+                        hasQuest = true
+                    else
+                        hasQuest = false
+                    end
+                else
+                    hasQuest = true
+                end
+            end
 
             if not hasQuest then
+                CurrentMob = nil
                 local questPos = data.QuestPos * CFrame.new(0, 3, 0)
                 local distToNPC = (hrp.Position - questPos.Position).Magnitude
                 if distToNPC > 25 then
@@ -3519,7 +3621,7 @@ task.spawn(function()
                     pcall(function()
                         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(data.QuestArgs))
                     end)
-                    task.wait(0.3)
+                    task.wait(0.4)
                 end
                 _levelFarmBusy = false
                 return
@@ -3562,25 +3664,38 @@ task.spawn(function()
                 return
             end
 
+            if currentTween then
+                currentTween:Cancel()
+                currentTween = nil
+            end
+            shouldTween = false
+
             PosMon = mobHRP.Position
             _B = true
-            BringEnemy()
+            BringEnemy(data.Name)
 
-            hrp.CFrame = targetCFrame
-            FaceTarget(mobHRP.Position)
-            EquipWeapon(_G.SelectWeapon)
-            PerformAttack(mobHRP)
+            EquipWeapon(_G.ChooseWP or _G.SelectWeapon or "Melee")
 
             local attackTicks = 0
-            while G.Alive(CurrentMob) and CurrentMob.Parent and _G.Level and _G.StartFarm and attackTicks < 30 do
+            while G.Alive(CurrentMob) and CurrentMob.Parent and _G.Level and _G.StartFarm and attackTicks < 60 do
                 task.wait(0.1)
                 attackTicks = attackTicks + 1
 
+                local currentChar = plr.Character
+                if not currentChar or not currentChar.Parent then break end
+                local currentHum = currentChar:FindFirstChild("Humanoid")
+                if not currentHum or currentHum.Health <= 0 then break end
+
                 if CurrentMob and CurrentMob:FindFirstChild("HumanoidRootPart") then
                     local mHRP = CurrentMob.HumanoidRootPart
-                    hrp.CFrame = mHRP.CFrame * CFrame.new(0, _G.MobHeight or 20, 0)
-                    FaceTarget(mHRP.Position)
-                    PerformAttack(mHRP)
+                    local currentMyHRP = currentChar:FindFirstChild("HumanoidRootPart")
+                    if currentMyHRP then
+                        currentMyHRP.CFrame = mHRP.CFrame * CFrame.new(0, _G.MobHeight or 20, 0)
+                        currentMyHRP.Velocity = Vector3.zero
+                        currentMyHRP.RotVelocity = Vector3.zero
+                        FaceTarget(mHRP.Position)
+                        PerformAttack(mHRP)
+                    end
                 else
                     break
                 end
@@ -4280,8 +4395,10 @@ local function GoToBoss(targetBoss)
         hrp.Velocity = Vector3.zero
         hrp.AssemblyLinearVelocity = Vector3.zero
         hum.AutoRotate = false
-        game:GetService("VirtualUser"):CaptureController()
-        game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+        pcall(function()
+            local t = char:FindFirstChildOfClass("Tool")
+            if t then t:Activate() end
+        end)
     else
         if _tp then _tp(targetCFrame) else hrp.CFrame = targetCFrame end
     end
