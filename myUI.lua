@@ -363,100 +363,177 @@ G.DistH = function(I, e)
 
 _G.MobHeight = _G.MobHeight or 20
 
-G.Kill = function(I, e)
-	if not (I and e) then return end
-
-	local hrp = I:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
-
-	if not I:GetAttribute("Locked") then
-		I:SetAttribute("Locked", hrp.CFrame)
-	end
-
-	PosMon = (I:GetAttribute("Locked")).Position
-
-	_B = true
-	BringEnemy()
-
-	EquipWeapon(_G.SelectWeapon)
-
-	local tool = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
-	if not tool then return end
-
-	_tp(hrp.CFrame * CFrame.new(0, _G.MobHeight, 0))
+-- ============================================================
+-- CORE ATTACK HELPER: Arahkan karakter ke target sebelum attack
+-- ============================================================
+local function FaceTarget(targetPos)
+    local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local dir = (targetPos - hrp.Position).Unit
+    hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(dir.X, 0, dir.Z))
 end
+
+-- ============================================================
+-- PERFORM ATTACK: Pukul mob sesuai weapon yang dipilih
+-- ============================================================
+local function PerformAttack(targetHRP)
+    if not targetHRP then return end
+    FaceTarget(targetHRP.Position)
+
+    local char = plr.Character
+    if not char then return end
+
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then return end
+
+    local tip = tool.ToolTip or ""
+
+    -- Melee / default attack (klik mouse simulasi)
+    local function doClick()
+        local pos = targetHRP.Position
+        local vp = workspace.CurrentCamera:WorldToScreenPoint(pos)
+        if vim2 then
+            pcall(function()
+                vim2:ClickButton1(Vector2.new(vp.X, vp.Y))
+            end)
+        end
+    end
+
+    if tip == "Melee" or tip == "" then
+        doClick()
+        task.wait(0.05)
+        doClick()
+    elseif tip == "Sword" then
+        doClick()
+        task.wait(0.05)
+        doClick()
+    elseif tip == "Blox Fruit" then
+        UseFruitSkills()
+    elseif tip == "Gun" then
+        doClick()
+        task.wait(0.05)
+        doClick()
+    end
+end
+
+-- ============================================================
+-- G.Kill YANG DIPERBAIKI: TP ke mob lalu langsung serang
+-- ============================================================
+G.Kill = function(mob, active)
+    if not (mob and active) then return end
+
+    local hrp = mob:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local hum = mob:FindFirstChild("Humanoid")
+    if not hum or hum.Health <= 0 then return end
+
+    -- Lock posisi mob supaya tidak lari
+    if not mob:GetAttribute("Locked") then
+        mob:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (mob:GetAttribute("Locked")).Position
+
+    _B = true
+    BringEnemy()
+
+    -- Equip senjata
+    EquipWeapon(_G.SelectWeapon)
+
+    -- Hitung posisi attack: di depan mob, bukan tepat di atas
+    local attackCFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 0)
+
+    -- Teleport ke target
+    local char = plr.Character
+    if not char then return end
+    local myHRP = char:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return end
+
+    -- Instant teleport (lebih reliable untuk damage)
+    myHRP.CFrame = attackCFrame
+
+    -- Hadapkan ke mob
+    FaceTarget(hrp.Position)
+
+    -- Tunggu 1 frame untuk posisi stabil
+    task.wait(0.05)
+
+    -- Lakukan serangan
+    PerformAttack(hrp)
+end
+
 G.Kill2 = function(I, e)
-		if I and e then
-			if not I:GetAttribute("Locked") then
-				I:SetAttribute("Locked", I.HumanoidRootPart.CFrame);
-			end;
-			PosMon = (I:GetAttribute("Locked")).Position;
-			BringEnemy();
-			EquipWeapon(_G.SelectWeapon);
-			local e = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool");
-			local K = e.ToolTip;
-			if K == "Blox Fruit" then
-				_tp((I.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0)) * CFrame.Angles(0, math.rad(90), 0));
-			else
-				_tp((I.HumanoidRootPart.CFrame * CFrame.new(0, 20, 8)) * CFrame.Angles(0, math.rad(180), 0));
-			end;
-			if RandomCFrame then
-				wait(.1);
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(0, 30, 25));
-				wait(.1);
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(25, 30, 0));
-				wait(.1);
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(-25, 30, 0));
-				wait(.1);
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(0, 30, 25));
-				wait(.1);
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(-25, 30, 0));
-			end;
-		end;
-	end;
+    if not (I and e) then return end
+    local hrp = I:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if not I:GetAttribute("Locked") then
+        I:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (I:GetAttribute("Locked")).Position
+    BringEnemy()
+    EquipWeapon(_G.SelectWeapon)
+
+    local tool = plr.Character and plr.Character:FindFirstChildOfClass("Tool")
+    if not tool then return end
+
+    local myHRP = plr.Character:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return end
+
+    local tip = tool.ToolTip or ""
+    if tip == "Blox Fruit" then
+        myHRP.CFrame = hrp.CFrame * CFrame.new(0, 10, 0)
+    else
+        myHRP.CFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 0)
+    end
+
+    FaceTarget(hrp.Position)
+    task.wait(0.05)
+    PerformAttack(hrp)
+end
+
 G.KillSea = function(I, e)
-		if I and e then
-			if not I:GetAttribute("Locked") then
-				I:SetAttribute("Locked", I.HumanoidRootPart.CFrame);
-			end;
-			PosMon = (I:GetAttribute("Locked")).Position;
-			BringEnemy();
-			EquipWeapon(_G.SelectWeapon);
-			local e = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool");
-			local K = e.ToolTip;
-			if K == "Blox Fruit" then
-				_tp((I.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0)) * CFrame.Angles(0, math.rad(90), 0));
-			else
-				notween(I.HumanoidRootPart.CFrame * CFrame.new(0, 50, 8));
-				wait(.85);
-				notween(I.HumanoidRootPart.CFrame * CFrame.new(0, 400, 0));
-				wait(1);
-			end;
-		end;
-	end;
+    if not (I and e) then return end
+    local hrp = I:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if not I:GetAttribute("Locked") then
+        I:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (I:GetAttribute("Locked")).Position
+    BringEnemy()
+    EquipWeapon(_G.SelectWeapon)
+
+    local myHRP = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return end
+
+    myHRP.CFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 0)
+    FaceTarget(hrp.Position)
+    task.wait(0.05)
+    PerformAttack(hrp)
+end
+
 G.Sword = function(I, e)
-		if I and e then
-			if not I:GetAttribute("Locked") then
-				I:SetAttribute("Locked", I.HumanoidRootPart.CFrame);
-			end;
-			PosMon = (I:GetAttribute("Locked")).Position;
-			BringEnemy();
-			weaponSc("Sword");
-			_tp(I.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0));
-			if RandomCFrame then
-				wait(.1);
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(0, 30, 25));
-				wait(.1);
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(25, 30, 0));
-				wait(.1);
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(-25, 30, 0));
-				wait(.1);
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(0, 30, 25));
-				wait(.1);
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(-25, 30, 0));
-			end;
-		end;
-	end;
+    if not (I and e) then return end
+    local hrp = I:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if not I:GetAttribute("Locked") then
+        I:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (I:GetAttribute("Locked")).Position
+    BringEnemy()
+    weaponSc("Sword")
+
+    local myHRP = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return end
+
+    myHRP.CFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 0)
+    FaceTarget(hrp.Position)
+    task.wait(0.05)
+    PerformAttack(hrp)
+end
+
 
 _G.FruitSkills = {
     Z = false,
@@ -488,38 +565,63 @@ UseFruitSkills = function()
 end
 
 G.Mas = function(I, e)
-		if I and e then
-			if not I:GetAttribute("Locked") then
-				I:SetAttribute("Locked", I.HumanoidRootPart.CFrame);
-			end;
-			PosMon = (I:GetAttribute("Locked")).Position;
-			BringEnemy();
-			if I.Humanoid.Health <= HealthM then
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0));
-				UseFruitSkills()
-			else
-				weaponSc("Melee");
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0));
-			end;
-		end;
-	end;
+    if not (I and e) then return end
+    local hrp = I:FindFirstChild("HumanoidRootPart")
+    local hum = I:FindFirstChild("Humanoid")
+    if not hrp or not hum then return end
+
+    if not I:GetAttribute("Locked") then
+        I:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (I:GetAttribute("Locked")).Position
+    BringEnemy()
+
+    local myHRP = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return end
+
+    if hum.Health <= HealthM then
+        myHRP.CFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 0)
+        FaceTarget(hrp.Position)
+        task.wait(0.05)
+        UseFruitSkills()
+    else
+        weaponSc("Melee")
+        myHRP.CFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 0)
+        FaceTarget(hrp.Position)
+        task.wait(0.05)
+        PerformAttack(hrp)
+    end
+end
+
 G.Masgun = function(I, e)
-		if I and e then
-			if not I:GetAttribute("Locked") then
-				I:SetAttribute("Locked", I.HumanoidRootPart.CFrame);
-			end;
-			PosMon = (I:GetAttribute("Locked")).Position;
-			BringEnemy();
-			if I.Humanoid.Health <= HealthM then
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(0, 35, 8));
-				Useskills("Gun", "Z");
-				Useskills("Gun", "X");
-			else
-				weaponSc("Melee");
-				_tp(I.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0));
-			end;
-		end;
-	end;
+    if not (I and e) then return end
+    local hrp = I:FindFirstChild("HumanoidRootPart")
+    local hum = I:FindFirstChild("Humanoid")
+    if not hrp or not hum then return end
+
+    if not I:GetAttribute("Locked") then
+        I:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (I:GetAttribute("Locked")).Position
+    BringEnemy()
+
+    local myHRP = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return end
+
+    if hum.Health <= HealthM then
+        myHRP.CFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 8)
+        FaceTarget(hrp.Position)
+        task.wait(0.05)
+        Useskills("Gun", "Z")
+        Useskills("Gun", "X")
+    else
+        weaponSc("Melee")
+        myHRP.CFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 0)
+        FaceTarget(hrp.Position)
+        task.wait(0.05)
+        PerformAttack(hrp)
+    end
+end
 statsSetings = function(I, e)
 		if I == "Melee" then
 			if plr.Data.Points.Value ~= 0 then
@@ -609,14 +711,18 @@ local function IsRaidMob(mob)
     return false
 end
 
+-- ============================================================
+-- BRING ENEMY: Tarik mob ke posisi player (instant, ringan)
+-- Dipanggil on-demand dari G.Kill, bukan background loop
+-- ============================================================
 BringEnemy = function()
-    if not FarmAtivo() or not _B then return end
+    if not _B then return end
 
-    local plr = game.Players.LocalPlayer
     local char = plr.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
+    -- Set simulasi radius agar mob bisa digerakkan
     pcall(function()
         sethiddenproperty(plr, "SimulationRadius", math.huge)
     end)
@@ -634,41 +740,19 @@ BringEnemy = function()
         if hum and root and hum.Health > 0 and not IsRaidMob(mob) then
             local dist = (root.Position - targetPos).Magnitude
 
-            if dist <= _G.BringRange and not root:GetAttribute("Tweening") then
+            if dist <= _G.BringRange then
                 count += 1
-                root:SetAttribute("Tweening", true)
-
-                local tween = TweenService:Create(
-                    root,
-                    TweenInfoBring,
-                    { CFrame = CFrame.new(targetPos) }
-                )
-
-                tween:Play()
-                tween.Completed:Once(function()
-                    if root then
-                        root:SetAttribute("Tweening", false)
-                    end
+                -- Instant pull: tidak pakai tween agar tidak numpuk
+                pcall(function()
+                    root.CFrame = CFrame.new(targetPos + Vector3.new(
+                        math.random(-5, 5), 0, math.random(-5, 5)
+                    ))
                 end)
             end
         end
     end
 end
 
-task.spawn(function()
-    while task.wait(1) do
-        if FarmAtivo() then
-            _B = true
-            BringEnemy()
-            task.wait(3)
-            _B = false
-            task.wait(5)
-        else
-            _B = false
-            task.wait(1)
-        end
-    end
-end)
 Useskills = function(I, e)
 		if I == "Melee" then
 			weaponSc("Melee");
@@ -1073,54 +1157,53 @@ getgenv().TweenSpeedFar = 300
 getgenv().TweenSpeedNear = 900
 
 _tp = function(I)
-local e = plr.Character;
-if not e or not e:FindFirstChild("HumanoidRootPart") then
-return;
-end;
+    local e = plr.Character
+    if not e then return end
+    local HRP = e:FindFirstChild("HumanoidRootPart")
+    if not HRP then return end
 
-local HRP = e.HumanoidRootPart;
+    if HRP.Anchored then
+        HRP.Anchored = false
+    end
 
-shouldTween = true
-getgenv().OnFarm = false
+    local dist = (I.Position - HRP.Position).Magnitude
 
-if HRP.Anchored then
-	HRP.Anchored = false
-	task.wait()
-end
+    -- Jarak sangat dekat: instant TP (tidak perlu tween, lebih ringan)
+    if dist <= 50 then
+        HRP.CFrame = I
+        getgenv().OnFarm = true
+        return
+    end
 
-local dist = (I.Position - HRP.Position).Magnitude
+    shouldTween = true
+    getgenv().OnFarm = false
 
-local speed = dist <= 90 and (getgenv().TweenSpeedNear or 900) or (getgenv().TweenSpeedFar or 300)
+    if e.Humanoid and e.Humanoid.Sit then
+        HRP.CFrame = CFrame.new(HRP.Position.X, I.Y, HRP.Position.Z)
+    end
 
-local info = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
-local tween = game:GetService("TweenService"):Create(C, info, { CFrame = I })
+    -- Tween hanya untuk jarak jauh
+    local speed = dist <= 90 and (getgenv().TweenSpeedNear or 900) or (getgenv().TweenSpeedFar or 300)
+    local info = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
 
-if e.Humanoid.Sit == true then
-	C.CFrame = CFrame.new(C.Position.X, I.Y, C.Position.Z)
-end
+    -- Tween langsung di HRP, tidak pakai Part C proxy (lebih akurat)
+    local tween = game:GetService("TweenService"):Create(HRP, info, { CFrame = I })
+    tween:Play()
 
-tween:Play()
-
-task.spawn(function()
-	while tween.PlaybackState == Enum.PlaybackState.Playing do
-		if not shouldTween then
-			tween:Cancel()
-			break
-		end
-		task.wait(.1)
-	end
-
-	getgenv().OnFarm = true
-end)
-
+    task.spawn(function()
+        tween.Completed:Wait()
+        getgenv().OnFarm = true
+        shouldTween = false
+    end)
 end
 
 TeleportToTarget = function(I)
-_tp(I)
+    _tp(I)
 end
 
 notween = function(I)
-plr.Character.HumanoidRootPart.CFrame = I
+    local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then hrp.CFrame = I end
 end
 
 function BTP(I)
@@ -2708,6 +2791,7 @@ v0:AddButton({
     end
 })
 
+v1:AddSection("Game Status")
 local Time = v1:AddParagraph({
     Title = "Time Zone",
     Content = ""
@@ -2750,6 +2834,7 @@ spawn(function()
         wait()
     end
 end)
+v1:AddSection("Event Status")
 local Miragecheck = v1:AddParagraph({
     Title = "Mirage Island",
     Content = "Status: "
@@ -2831,6 +2916,7 @@ spawn(function()
         end)
     end
 end)
+v1:AddSection("Boss Status")
 local TyrantStatus = v1:AddParagraph({
     Title = "Tyrant of the Skies",
     Content = "Status: "
@@ -2897,6 +2983,7 @@ spawn(function()
         end)
     end
 end)
+v1:AddSection("Misc Info")
 local Pullever = v1:AddParagraph({
     Title = "Pull Lever",
     Content = "Status: "
@@ -2968,6 +3055,7 @@ spawn(function()
         end
     end)
 end)
+v1:AddSection("Server Control")
 v1:AddInput("InputJobId", {
     Finished = true,
     Title = "Input Job Id",
@@ -3039,6 +3127,7 @@ v1:AddButton({
     end
 })
 
+v4:AddSection("Attack / Gun Aura")
 v4:AddDropdown("SelectAttackMode", {
     Title = "Select Attack Mode",
     Values = {"Normal Attack", "Fast Attack", "Super Attack", "Bear Attack", "Super Bear Attack"},
@@ -3161,7 +3250,7 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-    while task.wait(5) do
+    while task.wait(15) do
         pcall(setSimulationRadius)
     end
 end)
@@ -4702,6 +4791,7 @@ spawn(function()
 end)
 
 end
+v4:AddSection("Haki / Farm Settings")
 v4:AddToggle("AutoActiveHaki", {
 	Title = "Auto Active Haki",
 
@@ -4776,6 +4866,7 @@ spawn(function()
 		end);
 	end;
 end);
+v4:AddSection("General / Misc")
 v4:AddToggle("AntiAFK", {
 	Title = "Anti AFK",
 	Default = true,
@@ -5331,6 +5422,7 @@ if World2 then
     end)
 end
 
+v5:AddSection("Fishing Quest")
 v5:AddToggle("AutoQuestFishing", {
     Title = "Auto Quest Fishing",
     Default = GetSetting("Fish_AutoQuest", false),
@@ -6790,10 +6882,10 @@ v6:AddToggle("AutoAttackPirateGrandBrigade", {
 })
 
 if World2 then
-    v6:AddSection("Go to Sea 3 for more options")
+    v6:AddParagraph({ Title = "ℹ️ Info", Content = "Untuk opsi lebih lanjut, pergi ke Sea 3" })
 end
 if World1 then
-    v6:AddSection("Go to Sea 3 or Sea 2 for Farm maritime events")
+    v6:AddParagraph({ Title = "ℹ️ Info", Content = "Farm event laut tersedia di Sea 2 atau Sea 3" })
 end
 if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
     v6:AddToggle("AutoShark", {
@@ -10119,10 +10211,10 @@ spawn(function()
     end
 end)
 
-v13:AddSection("Stats Upgrade")
+v15:AddSection("Stats Upgrade")
 
 local StatsValue = 10
-v13:AddSlider("StatsValue", {
+v15:AddSlider("StatsValue", {
     Title = "Stats Value",
     Min = 0,
     Max = 1000,
@@ -10135,7 +10227,7 @@ v13:AddSlider("StatsValue", {
     end
 })
 
-v13:AddToggle("AutoMelee", {
+v15:AddToggle("AutoMelee", {
     Title = "Auto Melee",
     Default = GetSetting("Auto_Melee_Save", false),
     Callback = function(Value)
@@ -10155,7 +10247,7 @@ spawn(function()
     end
 end)
 
-v13:AddToggle("AutoSword", {
+v15:AddToggle("AutoSword", {
     Title = "Auto Sword",
     Default = GetSetting("Auto_Sword_Save", false),
     Callback = function(Value)
@@ -10175,7 +10267,7 @@ spawn(function()
     end
 end)
 
-v13:AddToggle("AutoGun", {
+v15:AddToggle("AutoGun", {
     Title = "Auto Gun",
     Default = GetSetting("Auto_Gun_Save", false),
     Callback = function(Value)
@@ -10195,7 +10287,7 @@ spawn(function()
     end
 end)
 
-v13:AddToggle("AutoBloxFruit", {
+v15:AddToggle("AutoBloxFruit", {
     Title = "Auto Blox Fruit",
     Default = GetSetting("Auto_DevilFruit_Save", false),
     Callback = function(Value)
@@ -10215,7 +10307,7 @@ spawn(function()
     end
 end)
 
-v13:AddToggle("AutoDefense", {
+v15:AddToggle("AutoDefense", {
     Title = "Auto Defense",
     Default = GetSetting("Auto_Defense_Save", false),
     Callback = function(Value)
@@ -11191,7 +11283,7 @@ v14:AddButton({
     end
 })
 
-v14:AddSection("Purchase Sword and Gun")
+v14:AddSection("Purchase Sword")
 
 v14:AddButton({
     Title = "Buy Cutlass $1,000",
@@ -11273,6 +11365,7 @@ v14:AddButton({
     end
 })
 
+v14:AddSection("Purchase Gun")
 v14:AddButton({
     Title = "Buy Slingshot $5,000",
     Callback = function()
@@ -11397,6 +11490,40 @@ v14:AddButton({
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "1")
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "2")
         Fluent:Notify({Title = "Race", Content = "Purchased Random Race", Duration = 2})
+    end
+})
+
+
+v15:AddSection("Performance Mode")
+
+v15:AddButton({
+    Title = "⚡ Low CPU Mode (Ringankan Lag)",
+    Callback = function()
+        LowCpu()
+        Fluent:Notify({Title = "Performance", Content = "Low CPU Mode aktif! Grafis diminimalkan.", Duration = 5})
+    end
+})
+
+v15:AddToggle("AutoLowCpuOnFarm", {
+    Title = "Auto Low CPU saat Farm",
+    Default = false,
+    Callback = function(v)
+        if v then
+            LowCpu()
+        end
+    end
+})
+
+v15:AddSlider("MobHeightSlider", {
+    Title = "Attack Height (tinggi di atas mob)",
+    Min = 0,
+    Max = 60,
+    Default = GetSetting("MobHeight_Save", 20),
+    Rounding = 0,
+    Callback = function(val)
+        _G.MobHeight = val
+        _G.SaveData["MobHeight_Save"] = val
+        SaveSettings()
     end
 })
 
