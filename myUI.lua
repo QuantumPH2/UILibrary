@@ -358,14 +358,11 @@ G.Dist = function(I, e)
 		return (Root.Position - (I:FindFirstChild("HumanoidRootPart")).Position).Magnitude <= e;
 	end;
 G.DistH = function(I, e)
-		return (Root.Position - (I:FindFirstChild("HumanoidRootPart")).Position).Magnitude > e;
-	end;
+    return (Root.Position - (I:FindFirstChild("HumanoidRootPart")).Position).Magnitude > e
+end
 
 _G.MobHeight = _G.MobHeight or 20
 
--- ============================================================
--- CORE ATTACK HELPER: Arahkan karakter ke target sebelum attack
--- ============================================================
 local function FaceTarget(targetPos)
     local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
@@ -373,9 +370,6 @@ local function FaceTarget(targetPos)
     hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(dir.X, 0, dir.Z))
 end
 
--- ============================================================
--- PERFORM ATTACK: Pukul mob sesuai weapon yang dipilih
--- ============================================================
 local function PerformAttack(targetHRP)
     if not targetHRP then return end
     FaceTarget(targetHRP.Position)
@@ -395,12 +389,10 @@ local function PerformAttack(targetHRP)
     if tip == "Blox Fruit" then
         UseFruitSkills()
     else
-        -- 1. Tool direct activation (triggers weapon swing & client hitbox)
         pcall(function()
             tool:Activate()
         end)
 
-        -- 2. Blox Fruits Combat Remotes (instant server-side hit registration)
         pcall(function()
             local Net = game:GetService("ReplicatedStorage"):FindFirstChild("Modules")
             Net = Net and Net:FindFirstChild("Net")
@@ -414,7 +406,6 @@ local function PerformAttack(targetHRP)
             end
         end)
 
-        -- 3. VirtualUser click fallback
         pcall(function()
             if vim2 then
                 local pos = targetHRP.Position
@@ -425,9 +416,6 @@ local function PerformAttack(targetHRP)
     end
 end
 
--- ============================================================
--- G.Kill YANG DIPERBAIKI: TP ke mob lalu langsung serang
--- ============================================================
 G.Kill = function(mob, active)
     if not (mob and active) then return end
 
@@ -437,7 +425,6 @@ G.Kill = function(mob, active)
     local hum = mob:FindFirstChild("Humanoid")
     if not hum or hum.Health <= 0 then return end
 
-    -- Lock posisi mob supaya tidak lari
     if not mob:GetAttribute("Locked") then
         mob:SetAttribute("Locked", hrp.CFrame)
     end
@@ -446,28 +433,18 @@ G.Kill = function(mob, active)
     _B = true
     BringEnemy()
 
-    -- Equip senjata
     EquipWeapon(_G.SelectWeapon)
 
-    -- Hitung posisi attack: di depan mob, bukan tepat di atas
     local attackCFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 0)
 
-    -- Teleport ke target
     local char = plr.Character
     if not char then return end
     local myHRP = char:FindFirstChild("HumanoidRootPart")
     if not myHRP then return end
 
-    -- Instant teleport (lebih reliable untuk damage)
     myHRP.CFrame = attackCFrame
-
-    -- Hadapkan ke mob
     FaceTarget(hrp.Position)
-
-    -- Tunggu 1 frame untuk posisi stabil
     task.wait(0.05)
-
-    -- Lakukan serangan
     PerformAttack(hrp)
 end
 
@@ -1094,10 +1071,6 @@ Hop = function()
 			end;
 		end);
 	end;
--- ============================================================
--- ============================================================
--- UNIFIED SMOOTH TWEEN & MOVEMENT SYSTEM
--- ============================================================
 local currentTween = nil
 local currentTargetPos = nil
 getgenv().TweenSpeed = 350
@@ -1139,7 +1112,6 @@ function stopTween()
     end
 end
 
--- Noclip & Anti-Fall Loop (smooth, clean reset)
 Services.RunService.Stepped:Connect(function()
     local isFarming = _G.StartFarm or _G.AutoFarm_Bone or _G.AutoFarm_Cake or _G.AutoTyrant or _G.AutoFarmNear or _G.AutoFarmChest
     if shouldTween or isFarming then
@@ -1189,7 +1161,6 @@ _tp = function(targetCFrame)
 
     local dist = (targetCFrame.Position - hrp.Position).Magnitude
 
-    -- Jarak dekat: instant CFrame (tanpa jeda, sangat responsif)
     if dist <= 30 then
         if currentTween then
             currentTween:Cancel()
@@ -1202,12 +1173,10 @@ _tp = function(targetCFrame)
         return
     end
 
-    -- Jika sedang terbang menuju target yang sama, biarkan terbang mulus tanpa restart
     if currentTween and currentTargetPos and (targetCFrame.Position - currentTargetPos).Magnitude <= 15 then
         return
     end
 
-    -- Jarak jauh: Smooth Linear Tween kecepatan tinggi
     shouldTween = true
     getgenv().OnFarm = false
     currentTargetPos = targetCFrame.Position
@@ -1637,9 +1606,6 @@ QuestCheck = function()
             NameMon = "Fishman Warrior"
             PosQ = CFrame.new(61122.65234375, 18.497442245483, 1569.3997802734)
             PosM = CFrame.new(60878.30078125, 18.482830047607, 1543.7574462891)
-            if _G.Level and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 10000 then
-                replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(61163.8515625, 11.6796875, 1819.7841796875))
-            end
         elseif I >= 400 and I <= 449 then
             Mon = "Fishman Commando"
             Qdata = 2
@@ -1647,9 +1613,6 @@ QuestCheck = function()
             NameMon = "Fishman Commando"
             PosQ = CFrame.new(61122.65234375, 18.497442245483, 1569.3997802734)
             PosM = CFrame.new(61922.6328125, 18.482830047607, 1493.9343261719)
-            if _G.Level and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 10000 then
-                replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(61163.8515625, 11.6796875, 1819.7841796875))
-            end
         elseif I >= 450 and I <= 474 then
             Mon = "God's Guard"
             Qdata = 1
@@ -1657,9 +1620,6 @@ QuestCheck = function()
             NameMon = "God's Guard"
             PosQ = CFrame.new(-4721.88867, 843.874695, -1949.96643)
             PosM = CFrame.new(-4710.04296875, 845.27697753906, -1927.3079833984)
-            if _G.Level and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 10000 then
-                replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-4607.82275, 872.54248, -1667.55688))
-            end
         elseif I >= 475 and I <= 524 then
             Mon = "Shanda"
             Qdata = 2
@@ -1667,9 +1627,6 @@ QuestCheck = function()
             NameMon = "Shanda"
             PosQ = CFrame.new(-7859.09814, 5544.19043, -381.476196)
             PosM = CFrame.new(-7678.4897460938, 5566.4038085938, -497.21560668945)
-            if _G.Level and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 10000 then
-                replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-7894.6176757813, 5547.1416015625, -380.29119873047))
-            end
         elseif I >= 525 and I <= 549 then
             Mon = "Royal Squad"
             Qdata = 1
@@ -1805,9 +1762,6 @@ QuestCheck = function()
             NameMon = "Ship Deckhand"
             PosQ = CFrame.new(1037.80127, 125.092171, 32911.6016)
             PosM = CFrame.new(1212.0111083984, 150.79205322266, 33059.24609375)
-            if _G.Level and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 500 then
-                replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(923.21252441406, 126.9760055542, 32852.83203125))
-            end
         elseif I >= 1275 and I <= 1299 then
             Mon = "Ship Engineer"
             Qdata = 2
@@ -1815,9 +1769,6 @@ QuestCheck = function()
             NameMon = "Ship Engineer"
             PosQ = CFrame.new(1037.80127, 125.092171, 32911.6016)
             PosM = CFrame.new(919.47863769531, 43.544013977051, 32779.96875)
-            if _G.Level and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 500 then
-                replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(923.21252441406, 126.9760055542, 32852.83203125))
-            end
         elseif I >= 1300 and I <= 1324 then
             Mon = "Ship Steward"
             Qdata = 1
@@ -1825,9 +1776,6 @@ QuestCheck = function()
             NameMon = "Ship Steward"
             PosQ = CFrame.new(968.80957, 125.092171, 33244.125)
             PosM = CFrame.new(919.43853759766, 129.55599975586, 33436.03515625)
-            if _G.Level and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 500 then
-                replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(923.21252441406, 126.9760055542, 32852.83203125))
-            end
         elseif I >= 1325 and I <= 1349 then
             Mon = "Ship Officer"
             Qdata = 2
@@ -1835,9 +1783,6 @@ QuestCheck = function()
             NameMon = "Ship Officer"
             PosQ = CFrame.new(968.80957, 125.092171, 33244.125)
             PosM = CFrame.new(1036.0179443359, 181.4390411377, 33315.7265625)
-            if _G.Level and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 500 then
-                replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(923.21252441406, 126.9760055542, 32852.83203125))
-            end
         elseif I >= 1350 and I <= 1374 then
             Mon = "Arctic Warrior"
             Qdata = 1
@@ -2129,14 +2074,6 @@ elseif I == 1650 or I <= 1699 then
 			PosM = CFrame.new(-16709.49,419.68,1751.09)
 		elseif I >= 2600 and I <= 2624 then
 			PosQ = CFrame.new(10778.875, -2087.72437, 9265.18359, 0.934615612, -9.33109447e-08, -0.355659455, 9.17655143e-08, 1, -2.12154276e-08, 0.355659455, -1.28090019e-08, 0.934615612)
-			if (getgenv().AutoFarm or _G.Level) and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 10000 then
-				_tp(CFrame.new(-16269.7041, 25.2288494, 1373.65955, 0.997390985, 1.47309942e-09, -0.0721890926, -4.00651912e-09, 0.99999994, -2.51183763e-09, 0.0721890852, 5.75363091e-10, 0.997390926))
-				task.wait(2)
-				local args = {"TravelToSubmergedIsland"}
-				game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SubmarineWorkerSpeak"):InvokeServer(unpack(args))
-				return
-			end
-
 			Mon = "Reef Bandit"
 			Qdata = 1
 			Qname = "SubmergedQuest1"
@@ -2144,14 +2081,6 @@ elseif I == 1650 or I <= 1699 then
 			PosM = CFrame.new(11019.1318, -2146.06812, 9342.3916, -0.719955266, -1.74275385e-08, 0.69402045, 5.76556367e-08, 1, 8.49211546e-08, -0.69402045, 1.01153624e-07, -0.719955266)
 		elseif I >= 2625 and I <= 2649 then
 			PosQ = CFrame.new(10778.875, -2087.72437, 9265.18359, 0.934615612, -9.33109447e-08, -0.355659455, 9.17655143e-08, 1, -2.12154276e-08, 0.355659455, -1.28090019e-08, 0.934615612)
-			if (getgenv().AutoFarm or _G.Level) and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 10000 then
-				_tp(CFrame.new(-16269.7041, 25.2288494, 1373.65955, 0.997390985, 1.47309942e-09, -0.0721890926, -4.00651912e-09, 0.99999994, -2.51183763e-09, 0.0721890852, 5.75363091e-10, 0.997390926))
-				task.wait(2)
-				local args = {"TravelToSubmergedIsland"}
-				game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SubmarineWorkerSpeak"):InvokeServer(unpack(args))
-				return
-			end
-
 			Mon = "Coral Pirate"
 			Qdata = 2
 			Qname = "SubmergedQuest1"
@@ -2159,14 +2088,6 @@ elseif I == 1650 or I <= 1699 then
 			PosM = CFrame.new(10808.6006, -2030.36145, 9364.2334, -0.775185347, -0.0359364748, 0.6307109, 0.0615428537, 0.989336014, 0.132010356, -0.628728986, 0.141148239, -0.764707148)
 		elseif I >= 2650 and I <= 2674 then
 			PosQ = CFrame.new(10880.6855, -2086.20044, 10032.624, -0.321384728, 9.87648434e-08, -0.946948707, 7.13271007e-08, 1, 8.00902953e-08, 0.946948707, -4.18033075e-08, -0.321384728)
-			if (getgenv().AutoFarm or _G.Level) and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 10000 then
-				_tp(CFrame.new(-16269.7041, 25.2288494, 1373.65955, 0.997390985, 1.47309942e-09, -0.0721890926, -4.00651912e-09, 0.99999994, -2.51183763e-09, 0.0721890852, 5.75363091e-10, 0.997390926))
-				task.wait(2)
-				local args = {"TravelToSubmergedIsland"}
-				game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SubmarineWorkerSpeak"):InvokeServer(unpack(args))
-				return
-			end
-
 			Mon = "Sea Chanter"
 			Qdata = 1
 			Qname = "SubmergedQuest2"
@@ -2174,14 +2095,6 @@ elseif I == 1650 or I <= 1699 then
 			PosM = CFrame.new(10671.2715, -2057.59155, 10047.2588, -0.846484065, -3.11045447e-08, 0.532414079, -5.55383117e-08, 1, -2.98785316e-08, -0.532414079, -5.48610757e-08, -0.846484065)
 		elseif I >= 2675 and I <= 2699 then
 			PosQ = CFrame.new(10880.6855, -2086.20044, 10032.624, -0.321384728, 9.87648434e-08, -0.946948707, 7.13271007e-08, 1, 8.00902953e-08, 0.946948707, -4.18033075e-08, -0.321384728)
-			if (getgenv().AutoFarm or _G.Level) and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 10000 then
-				_tp(CFrame.new(-16269.7041, 25.2288494, 1373.65955, 0.997390985, 1.47309942e-09, -0.0721890926, -4.00651912e-09, 0.99999994, -2.51183763e-09, 0.0721890852, 5.75363091e-10, 0.997390926))
-				task.wait(2)
-				local args = {"TravelToSubmergedIsland"}
-				game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SubmarineWorkerSpeak"):InvokeServer(unpack(args))
-				return
-			end
-
 			Mon = "Ocean Prophet"
 			Qdata = 2
 			Qname = "SubmergedQuest2"
@@ -2189,14 +2102,6 @@ elseif I == 1650 or I <= 1699 then
 			PosM = CFrame.new(11008.5195, -2007.72839, 10223.0791, -0.688615739, 2.33523378e-09, -0.725126445, 2.99292546e-09, 1, 3.78221315e-10, 0.725126445, -1.90980032e-09, -0.688615739)
 		elseif I >= 2700 and I <= 2724 then
 			PosQ = CFrame.new(9640.08789, -1992.44507, 9613.65234, -0.957327187, 4.11991223e-08, 0.289006323, 1.5775445e-08, 1, -9.02985846e-08, -0.289006323, -8.18860855e-08, -0.957327187)
-			if (getgenv().AutoFarm or _G.Level) and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 10000 then
-				_tp(CFrame.new(-16269.7041, 25.2288494, 1373.65955, 0.997390985, 1.47309942e-09, -0.0721890926, -4.00651912e-09, 0.99999994, -2.51183763e-09, 0.0721890852, 5.75363091e-10, 0.997390926))
-				task.wait(2)
-				local args = {"TravelToSubmergedIsland"}
-				game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SubmarineWorkerSpeak"):InvokeServer(unpack(args))
-				return
-			end
-
 			Mon = "High Disciple"
 			Qdata = 1
 			Qname = "SubmergedQuest3"
@@ -2204,14 +2109,6 @@ elseif I == 1650 or I <= 1699 then
 			PosM = CFrame.new(9750.41602, -1966.93884, 9753.36035, -0.749824047, 5.57797613e-08, -0.661637306, 2.03500754e-08, 1, 6.1243199e-08, 0.661637306, 3.24572511e-08, -0.749824047)
 		elseif I >= 2725 then
 			PosQ = CFrame.new(9640.08789, -1992.44507, 9613.65234, -0.957327187, 4.11991223e-08, 0.289006323, 1.5775445e-08, 1, -9.02985846e-08, -0.289006323, -8.18860855e-08, -0.957327187)
-			if (getgenv().AutoFarm or _G.Level) and (PosQ.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 10000 then
-				_tp(CFrame.new(-16269.7041, 25.2288494, 1373.65955, 0.997390985, 1.47309942e-09, -0.0721890926, -4.00651912e-09, 0.99999994, -2.51183763e-09, 0.0721890852, 5.75363091e-10, 0.997390926))
-				task.wait(2)
-				local args = {"TravelToSubmergedIsland"}
-				game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SubmarineWorkerSpeak"):InvokeServer(unpack(args))
-				return
-			end
-
 			Mon = "Grand Devotee"
 			Qdata = 2
 			Qname = "SubmergedQuest3"
@@ -3631,10 +3528,6 @@ spawn(function()
     end
 end)
 
--- ============================================================
--- LEVEL FARM LOOP — Rewrite mendalam
--- Flow: Ambil quest → TP ke mob → Kill → ulangi
--- ============================================================
 local CurrentMob = nil
 local _levelFarmBusy = false
 
@@ -3656,7 +3549,7 @@ end
 
 task.spawn(function()
     while true do
-        task.wait(0.1) -- Fast and responsive loop
+        task.wait(0.1)
 
         if not (_G.Level and _G.StartFarm) then
             CurrentMob = nil
@@ -3680,8 +3573,7 @@ task.spawn(function()
             local QuestUI = plr.PlayerGui and plr.PlayerGui:FindFirstChild("Main") and plr.PlayerGui.Main:FindFirstChild("Quest")
             local hasQuest = QuestUI and QuestUI.Visible
 
-            -- STEP 1: Ambil quest jika belum ada
-            if _G.AcceptQuest and not hasQuest then
+            if not hasQuest then
                 local distToNPC = (hrp.Position - data.QuestPos.Position).Magnitude
                 if distToNPC > 25 then
                     _tp(data.QuestPos)
@@ -3695,7 +3587,6 @@ task.spawn(function()
                 return
             end
 
-            -- STEP 2: Cari mob yang sesuai dengan quest
             if CurrentMob and (not CurrentMob.Parent or not G.Alive(CurrentMob)) then
                 CurrentMob = nil
             end
@@ -3704,7 +3595,6 @@ task.spawn(function()
                 CurrentMob = GetNearestMob(data.Name)
             end
 
-            -- STEP 3: Jika belum ada mob di sekitar, travel ke spawn area
             if not CurrentMob then
                 local distToFarm = (hrp.Position - data.FarmPos.Position).Magnitude
                 if distToFarm > 25 then
@@ -3712,12 +3602,11 @@ task.spawn(function()
                 else
                     hrp.CFrame = data.FarmPos * CFrame.new(0, _G.MobHeight or 20, 0)
                 end
-                task.wait(0.5)
+                task.wait(0.4)
                 _levelFarmBusy = false
                 return
             end
 
-            -- STEP 4: Serang mob
             local mobHRP = CurrentMob:FindFirstChild("HumanoidRootPart")
             if not mobHRP then
                 CurrentMob = nil
@@ -3725,31 +3614,26 @@ task.spawn(function()
                 return
             end
 
-            -- Tarik mob terdekat ke area pertempuran
+            local targetCFrame = mobHRP.CFrame * CFrame.new(0, _G.MobHeight or 20, 0)
+            local distToMob = (hrp.Position - targetCFrame.Position).Magnitude
+
+            if distToMob > 30 then
+                _tp(targetCFrame)
+                _levelFarmBusy = false
+                return
+            end
+
             PosMon = mobHRP.Position
             _B = true
             BringEnemy()
 
-            -- Posisikan di atas target
-            local targetCFrame = mobHRP.CFrame * CFrame.new(0, _G.MobHeight or 20, 0)
-            local distToMob = (hrp.Position - targetCFrame.Position).Magnitude
-
-            if distToMob > 40 then
-                _tp(targetCFrame)
-            else
-                hrp.CFrame = targetCFrame
-            end
-
-            -- Hadapkan karakter ke mob
+            hrp.CFrame = targetCFrame
             FaceTarget(mobHRP.Position)
-
-            -- Eksekusi serangan
             EquipWeapon(_G.SelectWeapon)
             PerformAttack(mobHRP)
 
-            -- Loop serang sampai mob mati
             local attackTicks = 0
-            while G.Alive(CurrentMob) and CurrentMob.Parent and _G.Level and _G.StartFarm and attackTicks < 40 do
+            while G.Alive(CurrentMob) and CurrentMob.Parent and _G.Level and _G.StartFarm and attackTicks < 30 do
                 task.wait(0.1)
                 attackTicks = attackTicks + 1
 
