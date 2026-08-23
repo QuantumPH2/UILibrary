@@ -70,11 +70,9 @@ task.spawn(function()
     end
 end)
 
-local desiredTeam = "Marines"
-
-if not player.Team or player.Team.Name ~= desiredTeam then
+if not player.Team then
     pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", desiredTeam)
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
     end)
 end
 
@@ -1128,9 +1126,18 @@ Services.RunService.Stepped:Connect(function()
                 if not bv then
                     bv = Instance.new("BodyVelocity")
                     bv.Name = "FarmBV"
-                    bv.MaxForce = Vector3.new(9e5, 9e5, 9e5)
+                    bv.MaxForce = Vector3.zero
                     bv.Velocity = Vector3.zero
                     bv.Parent = hrp
+                end
+
+                if shouldTween then
+                    bv.MaxForce = Vector3.zero
+                    hrp.Velocity = Vector3.zero
+                    hrp.RotVelocity = Vector3.zero
+                else
+                    bv.MaxForce = Vector3.new(9e5, 9e5, 9e5)
+                    bv.Velocity = Vector3.zero
                 end
             end
         end
@@ -1161,13 +1168,15 @@ _tp = function(targetCFrame)
 
     local dist = (targetCFrame.Position - hrp.Position).Magnitude
 
-    if dist <= 30 then
+    if dist <= 25 then
         if currentTween then
             currentTween:Cancel()
             currentTween = nil
         end
         currentTargetPos = nil
         hrp.CFrame = targetCFrame
+        hrp.Velocity = Vector3.zero
+        hrp.RotVelocity = Vector3.zero
         getgenv().OnFarm = true
         shouldTween = false
         return
@@ -1203,6 +1212,8 @@ _tp = function(targetCFrame)
         if currentTween == tween then
             currentTween = nil
             currentTargetPos = nil
+            hrp.Velocity = Vector3.zero
+            hrp.RotVelocity = Vector3.zero
             getgenv().OnFarm = true
             shouldTween = false
         end
@@ -1219,26 +1230,8 @@ notween = function(I)
 end
 
 function BTP(I)
-	local e = game.Players.LocalPlayer;
-	local K = e.Character.HumanoidRootPart;
-	local n = e.Character.Humanoid;
-	local d = e.PlayerGui.Main;
-	local z = I.Position;
-	local H = K.Position;
-
-	repeat
-		n.Health = 0;
-		K.CFrame = I;
-		d.Quest.Visible = false;
-
-		if (K.Position - H).Magnitude > 1 then
-			H = K.Position;
-			K.CFrame = I;
-		end;
-
-		task.wait(.5);
-	until (I.Position - K.Position).Magnitude <= 2000;
-end;
+    _tp(I)
+end
 
 QuestB = function()
 		if World1 then
@@ -1453,7 +1446,8 @@ QuestBeta = function()
 		};
 	end;
 QuestCheck = function()
-    local I = game.Players.LocalPlayer.Data.Level.Value
+    local I = (game.Players.LocalPlayer:FindFirstChild("Data") and game.Players.LocalPlayer.Data:FindFirstChild("Level") and game.Players.LocalPlayer.Data.Level.Value) or 1
+    local currentTeam = (game.Players.LocalPlayer.Team and game.Players.LocalPlayer.Team.Name) or "Pirates"
 
     if World1 and I > 699 then
         I = 650
@@ -1465,14 +1459,14 @@ QuestCheck = function()
 
     if World1 then
         if I == 1 or I <= 9 then
-            if tostring(TeamSelf) == "Marines" then
+            if currentTeam == "Marines" then
                 Mon = "Trainee"
                 Qname = "MarineQuest"
                 Qdata = 1
                 NameMon = "Trainee"
                 PosM = CFrame.new(-2709.67944, 24.5206585, 2104.24585)
                 PosQ = CFrame.new(-2709.67944, 24.5206585, 2104.24585)
-            elseif tostring(TeamSelf) == "Pirates" then
+            else
                 Mon = "Bandit"
                 Qdata = 1
                 Qname = "BanditQuest1"
@@ -3548,6 +3542,11 @@ local function GetNearestMob(TargetName)
 end
 
 task.spawn(function()
+    plr.CharacterAdded:Connect(function()
+        CurrentMob = nil
+        _levelFarmBusy = false
+    end)
+
     while true do
         task.wait(0.1)
 
@@ -3566,6 +3565,8 @@ task.spawn(function()
             if not char then _levelFarmBusy = false return end
             local hrp = char:FindFirstChild("HumanoidRootPart")
             if not hrp then _levelFarmBusy = false return end
+            local hum = char:FindFirstChild("Humanoid")
+            if not hum or hum.Health <= 0 then _levelFarmBusy = false return end
 
             local data = GetTargetByLevel()
             if not data then _levelFarmBusy = false return end
@@ -3574,14 +3575,15 @@ task.spawn(function()
             local hasQuest = QuestUI and QuestUI.Visible
 
             if not hasQuest then
-                local distToNPC = (hrp.Position - data.QuestPos.Position).Magnitude
+                local questPos = data.QuestPos * CFrame.new(0, 3, 0)
+                local distToNPC = (hrp.Position - questPos.Position).Magnitude
                 if distToNPC > 25 then
-                    _tp(data.QuestPos)
+                    _tp(questPos)
                 else
                     pcall(function()
                         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(data.QuestArgs))
                     end)
-                    task.wait(0.4)
+                    task.wait(0.3)
                 end
                 _levelFarmBusy = false
                 return
@@ -3596,13 +3598,14 @@ task.spawn(function()
             end
 
             if not CurrentMob then
-                local distToFarm = (hrp.Position - data.FarmPos.Position).Magnitude
+                local farmPos = data.FarmPos * CFrame.new(0, _G.MobHeight or 20, 0)
+                local distToFarm = (hrp.Position - farmPos.Position).Magnitude
                 if distToFarm > 25 then
-                    _tp(data.FarmPos)
+                    _tp(farmPos)
                 else
-                    hrp.CFrame = data.FarmPos * CFrame.new(0, _G.MobHeight or 20, 0)
+                    hrp.CFrame = farmPos
                 end
-                task.wait(0.4)
+                task.wait(0.3)
                 _levelFarmBusy = false
                 return
             end
@@ -3617,7 +3620,7 @@ task.spawn(function()
             local targetCFrame = mobHRP.CFrame * CFrame.new(0, _G.MobHeight or 20, 0)
             local distToMob = (hrp.Position - targetCFrame.Position).Magnitude
 
-            if distToMob > 30 then
+            if distToMob > 25 then
                 _tp(targetCFrame)
                 _levelFarmBusy = false
                 return
