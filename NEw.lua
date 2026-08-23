@@ -2584,8 +2584,8 @@ local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Quantu
 local Window = Fluent:CreateWindow({
     Title = "Quantum HUB",
     SubTitle = "Blox Fruit 1.0.0.1",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
+    MinWindowSize = Vector2.new(440, 250),
+    Size = UDim2.fromOffset(525, 350),
     Acrylic = false,
     Theme = "Emerald",
     MinimizeKey = Enum.KeyCode.LeftControl
@@ -2601,8 +2601,8 @@ task.spawn(function()
 end)
 
 local v0 = Window:AddTab({
-    Title = "Info",
-    Icon = "info"
+    Title = "Home",
+    Icon = "rbxassetid://109959345069668"
 })
 local v1 = Window:AddTab({
     Title = "Status",
@@ -2610,22 +2610,22 @@ local v1 = Window:AddTab({
 })
 local v2 = Window:AddTab({
     Title = "Farming",
-    Icon = "sword"
+    Icon = "landmark"
 })
 local v3 = Window:AddTab({
-    Title = "Quests",
+    Title = "Quests/Other",
     Icon = "list"
 })
 local v4 = Window:AddTab({
-    Title = "Setting Farm",
-    Icon = "sliders"
+    Title = "Farm settings",
+    Icon = "settings"
 })
 local v5 = Window:AddTab({
-    Title = "Fishing",
+    Title = "Auto Fishing",
     Icon = "anchor"
 })
 local v6 = Window:AddTab({
-    Title = "Sea Events",
+    Title = "Sea Event",
     Icon = "globe"
 })
 local v7 = Window:AddTab({
@@ -2633,160 +2633,62 @@ local v7 = Window:AddTab({
     Icon = "flame"
 })
 local v8 = Window:AddTab({
-    Title = "Race V4",
-    Icon = "sparkles"
+    Title = "Race",
+    Icon = "map"
 })
 local v9 = Window:AddTab({
-    Title = "Devil Fruit",
+    Title = "Fruits",
     Icon = "package"
 })
 local v10 = Window:AddTab({
-    Title = "Dungeon",
+    Title = "Raid",
     Icon = "shield"
 })
 local v11 = Window:AddTab({
     Title = "Teleport",
-    Icon = "map-pin"
+    Icon = "rbxassetid://91306356501736"
 })
 local v12 = Window:AddTab({
-    Title = "Combat & PvP",
-    Icon = "crosshair"
+    Title = "PvP",
+    Icon = "sword"
 })
 local v13 = Window:AddTab({
-    Title = "Visuals",
+    Title = "Esp",
     Icon = "eye"
 })
+
 local v14 = Window:AddTab({
     Title = "Shop",
-    Icon = "shopping-cart"
+    Icon = "rbxassetid://71885477293226"
 })
 local v15 = Window:AddTab({
     Title = "Settings",
     Icon = "settings"
 })
 
--- =====================================================================
--- TAB: INFO
--- =====================================================================
-v0:AddSection("User Profile & Status")
-
-local UserProfileParagraph = v0:AddParagraph({
-    Title = "Welcome to Quantum HUB",
-    Content = "Loading player profile..."
+v0:AddParagraph({
+    Title = "Quantum HUB",
+    Content = "Script by Quantum Team"
 })
-
-local function UpdateHomeProfile()
-    pcall(function()
-        local currentSea = World1 and "Sea 1 (Old World)" or (World2 and "Sea 2 (Dressrosa)" or (World3 and "Sea 3 (Zou)" or "Unknown Sea"))
-        local playerLevel = (plr and plr.Data and plr.Data.Level and plr.Data.Level.Value) or 0
-        local playerBeli = (plr and plr.Data and plr.Data.Beli and plr.Data.Beli.Value) or 0
-        local playerFrags = (plr and plr.Data and plr.Data.Fragments and plr.Data.Fragments.Value) or 0
-        local playerTeam = (plr and plr.Team and plr.Team.Name) or "No Team"
-        local execName = identifyexecutor and identifyexecutor() or "Unknown Executor"
-        
-        UserProfileParagraph:SetTitle("👤 " .. tostring(plr.DisplayName) .. " (@" .. tostring(plr.Name) .. ")")
-        UserProfileParagraph:SetDesc(string.format(
-            "• Level: %s
-• Beli: $%s | Fragments: %s
-• Current Sea: %s
-• Team: %s
-• Executor: %s",
-            tostring(playerLevel),
-            tostring(playerBeli),
-            tostring(playerFrags),
-            currentSea,
-            playerTeam,
-            execName
-        ))
-    end)
-end
-
-task.spawn(function()
-    task.wait(1)
-    UpdateHomeProfile()
-    while task.wait(5) do
-        UpdateHomeProfile()
-    end
-end)
-
-v0:AddSection("Quick Utilities")
-
-v0:AddButton({
-    Title = "Rejoin Current Server",
-    Description = "Reconnect to the current Roblox server instance",
-    Callback = function()
-        pcall(function()
-            game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
-        end)
-    end
-})
-
-v0:AddButton({
-    Title = "Server Hop (Random)",
-    Description = "Teleport to a new random server",
-    Callback = function()
-        Fluent:Notify({ Title = "Quantum HUB", Content = "Searching for a new server...", Duration = 3 })
-        Hop()
-    end
-})
-
-v0:AddButton({
-    Title = "Server Hop (Lowest Players)",
-    Description = "Teleport to a server with the fewest active players",
-    Callback = function()
-        Fluent:Notify({ Title = "Quantum HUB", Content = "Searching for low player server...", Duration = 3 })
-        local Http = game:GetService("HttpService")
-        local TPS = game:GetService("TeleportService")
-        local Players = game:GetService("Players")
-        local localPlr = Players.LocalPlayer
-        pcall(function()
-            local servers = Http:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")).data
-            for _, s in pairs(servers) do
-                if s.playing and s.playing < s.maxPlayers and s.id ~= game.JobId then
-                    TPS:TeleportToPlaceInstance(game.PlaceId, s.id, localPlr)
-                    break
-                end
-            end
-        end)
-    end
-})
-
-v0:AddButton({
-    Title = "Copy Server Job ID",
-    Description = "Copy current JobId to clipboard for friends to join",
-    Callback = function()
-        pcall(function()
-            setclipboard(tostring(game.JobId))
-            Fluent:Notify({ Title = "Quantum HUB", Content = "Job ID copied to clipboard!", Duration = 3 })
-        end)
-    end
-})
-
-v0:AddSection("Community & Support")
-
-v0:AddButton({
-    Title = "Copy Official Discord Link",
-    Description = "Join Quantum Team community for updates & support",
-    Callback = function()
-        pcall(function()
-            local link = "https://discord.gg/PsVJdnah5"
-            if setclipboard then
-                setclipboard(link)
-            end
-            Fluent:Notify({ Title = "Quantum HUB", Content = "Discord link copied to clipboard!", Duration = 3 })
-        end)
-    end
-})
-
-v0:AddSection("Quantum HUB Information")
 
 v0:AddParagraph({
-    Title = "Quantum HUB - Blox Fruit 1.0.0.1",
-    Content = "• Developed & Maintained by: Quantum Team
-• Engine: Fluent UI Native
-• Version: 1.0.0.1
-• Status: Active & Operational
-• Note: Gun Aura currently does not target boats or Leviathan."
+    Title = "Discord",
+    Content = "Join Server Discord"
+})
+
+v0:AddButton({
+    Title = "Copy Link Discord",
+    Callback = function()
+        local link = "https://discord.gg/jdmX43t5mY"
+        if setclipboard then
+            setclipboard(link)
+        end
+    end
+})
+
+v0:AddParagraph({
+    Title = "Quantum HUB",
+    Content = "•Quantum HUB\n• Script oleh Quantum Team\n• Tanggal Pembuatan: 13 Maret 2026\n• Tanggal terakhir diperbarui: 1 Juni 2026\n• Senjata Aura saat ini tidak dapat menembak perahu dan leviathan"
 })
 
 local Time = v1:AddParagraph({
@@ -3049,7 +2951,7 @@ spawn(function()
         end
     end)
 end)
-v1:AddInput("Input_InputJobId", {
+v1:AddInput("Input_1", {Finished = true, 
     Title = "Input Job Id",
     Placeholder = "Job ID",
     ClearText = true,
@@ -3057,7 +2959,7 @@ v1:AddInput("Input_InputJobId", {
         getgenv().Job = Value
     end
 })
-v1:AddToggle("Toggle_SpamJoin", {
+v1:AddToggle("Toggle_1", {
     Title = "Spam Join",
     Default = false,
     Callback = function(Value)
@@ -3119,7 +3021,7 @@ v1:AddButton({
     end
 })
 
-v4:AddDropdown("Dropdown_SelectAttackMode", {
+v4:AddDropdown("Dropdown_1", {
     Title = "Select Attack Mode",
     Values = {"Normal Attack", "Fast Attack", "Super Attack", "Bear Attack", "Super Bear Attack"},
     Default = "Fast Attack",
@@ -3129,7 +3031,7 @@ v4:AddDropdown("Dropdown_SelectAttackMode", {
     end
 })
 
-v4:AddToggle("Toggle_EnableFastAttack", {
+v4:AddToggle("Toggle_2", {
     Title = "Enable Fast Attack",
     Default = true,
     Callback = function(state)
@@ -3142,7 +3044,7 @@ v4:AddToggle("Toggle_EnableFastAttack", {
     end
 })
 
-v4:AddToggle("Toggle_EnableAutoClick", {
+v4:AddToggle("Toggle_3", {
     Title = "Enable Auto Click",
     Default = false,
     Callback = function(state)
@@ -3150,7 +3052,7 @@ v4:AddToggle("Toggle_EnableAutoClick", {
     end
 })
 
-v4:AddDropdown("Dropdown_Selecttargettype", {
+v4:AddDropdown("Dropdown_2", {
     Title = "Select target type",
     Values = TargetTypes,
     Default = "All",
@@ -3159,18 +3061,18 @@ v4:AddDropdown("Dropdown_Selecttargettype", {
     end
 })
 
-v4:AddSlider("Slider_Gunrange", {
+v4:AddSlider("Slider_1", {
     Title = "Gun range",
     Min = 50,
     Max = 30000,
     Default = 500,
-    Rounding = 0,
+    Rounding = 10,
     Callback = function(val)
         getgenv().GunAuraSettings.GunRange = val
     end
 })
 
-v4:AddToggle("Toggle_Autogunaura", {
+v4:AddToggle("Toggle_4", {
     Title = "Auto gun aura",
     Default = false,
     Callback = function(val)
@@ -3178,7 +3080,7 @@ v4:AddToggle("Toggle_Autogunaura", {
     end
 })
 
-v4:AddToggle("Toggle_Autoclickwhenholdinggun2s", {
+v4:AddToggle("Toggle_5", {
     Title = "Auto click when holding gun (2s)",
     Default = false,
     Callback = function(val)
@@ -3246,8 +3148,8 @@ task.spawn(function()
     end
 end)
 
-v2:AddSection("Auto Farm main")
-v2:AddDropdown("Dropdown_SelectWeapon", {
+v2:AddParagraph({Title = "â”€â”€ Auto Farm main â”€â”€", Content = ""})
+v2:AddDropdown("Dropdown_3", {
     Title = "Select Weapon",
     Values = {"Melee","Sword","Blox Fruit","Gun"},
     Default = "Melee",
@@ -3293,7 +3195,7 @@ local function TeleportConditional(hrp, targetCFrame, threshold)
     end
 end
 
-v2:AddDropdown("Dropdown_SelectFarmMode", {
+v2:AddDropdown("Dropdown_4", {
     Title = "Select Farm Mode",
     Values = {"Level", "Bone", "Cake Prince", "Tyrant Of The Skies"},
     Default = GetSetting("SelectedFarmMode_Save", "Level"),
@@ -3304,7 +3206,7 @@ v2:AddDropdown("Dropdown_SelectFarmMode", {
     end
 })
 
-v2:AddToggle("Toggle_StartFarm", {
+v2:AddToggle("Toggle_6", {
     Title = "Start Farm",
     Default = GetSetting("StartFarm_Save", false),
     Callback = function(v)
@@ -3332,7 +3234,7 @@ v2:AddToggle("Toggle_StartFarm", {
     end
 })
 
-v2:AddToggle("Toggle_AcceptQuests", {
+v2:AddToggle("Toggle_7", {
     Title = "Accept Quests",
     Default = GetSetting("AcceptQuest_Save", false),
     Callback = function(v)
@@ -3793,14 +3695,14 @@ spawn(function()
         end
     end
 end)
-v2:AddSection("Other")
+v2:AddParagraph({Title = "â”€â”€ Other â”€â”€", Content = ""})
 
 _G.MaxFarmDistance = 325
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-v2:AddToggle("Toggle_KillMobsNearest", {
+v2:AddToggle("Toggle_8", {
     Title = "Kill Mobs Nearest",
 
     Default = GetSetting("AutoFarmNear_Save", false),
@@ -3870,7 +3772,7 @@ end)
 local Sec = 0.5
 
 if World2 then
-v2:AddToggle("Toggle_AutoFactoryRaid", {
+v2:AddToggle("Toggle_9", {
     Title = "Auto Factory Raid",
 
     Default = GetSetting("AutoFactory_Save", false),
@@ -3918,7 +3820,7 @@ spawn(function()
 end)
 end
 if World3 then
-v2:AddToggle("Toggle_AutoPirateRaid", {
+v2:AddToggle("Toggle_10", {
     Title = "Auto Pirate Raid",
 
     Default = GetSetting("AutoRaidCastle_Save", false),
@@ -3988,9 +3890,9 @@ spawn(function()
     end
 end)
 end
-v2:AddSection("Collect")
+v2:AddParagraph({Title = "â”€â”€ Collect â”€â”€", Content = ""})
 
-v2:AddToggle("Toggle_AutoCollectChest", {
+v2:AddToggle("Toggle_11", {
     Title = "Auto Collect Chest",
 
     Default = GetSetting("AutoFarmChest_Save", false),
@@ -4003,7 +3905,7 @@ v2:AddToggle("Toggle_AutoCollectChest", {
     end,
 })
 
-v2:AddToggle("Toggle_AutoCollectBerry", {
+v2:AddToggle("Toggle_12", {
 	Title = "Auto Collect Berry",
 
 	Default = GetSetting("AutoBerry_Save", false),
@@ -4071,9 +3973,9 @@ spawn(function()
         end
     end
 end)
-v2:AddSection("Material")
+v2:AddParagraph({Title = "â”€â”€ Material â”€â”€", Content = ""})
 
-v2:AddDropdown("Dropdown_SelectMaterial", {
+v2:AddDropdown("Dropdown_5", {
 	Title = "Select Material",
 	Values = MaterialList,
 
@@ -4087,7 +3989,7 @@ v2:AddDropdown("Dropdown_SelectMaterial", {
 	end,
 })
 
-v2:AddToggle("Toggle_AutoFarm", {
+v2:AddToggle("Toggle_13", {
 	Title = "Auto Farm",
 
 	Default = GetSetting("AutoMaterial_Save", false),
@@ -4140,9 +4042,9 @@ spawn(function()
 end);
 
 if World3 then
-v2:AddSection("Bones")
+v2:AddParagraph({Title = "â”€â”€ Bones â”€â”€", Content = ""})
 
-v2:AddToggle("Toggle_TradeBone", {
+v2:AddToggle("Toggle_14", {
     Title = "Trade Bone",
     Default = false,
     Callback = function(Value)
@@ -4158,7 +4060,7 @@ spawn(function()
     end
 end)
 
-v2:AddToggle("Toggle_AutoSoulReaper", {
+v2:AddToggle("Toggle_15", {
     Title = "Auto Soul Reaper",
     Default = false,
     Callback = function(v)
@@ -4196,7 +4098,7 @@ end)
 
 local prayPos = CFrame.new(-8652.99707, 143.450119, 6170.50879, -0.983064115, -2.48005533E-10, 0.18326205, -1.78910387E-9, 1, -8.24392288E-9, -0.18326205, -8.43218029E-9, -0.983064115)
 
-v2:AddToggle("Toggle_AutoPray", {
+v2:AddToggle("Toggle_16", {
     Title = "Auto Pray",
     Default = false,
     Callback = function(v)
@@ -4228,7 +4130,7 @@ end)
 
 local luckPos = CFrame.new(-8652.99707, 143.450119, 6170.50879, -0.983064115, -2.48005533E-10, 0.18326205, -1.78910387E-9, 1, -8.24392288E-9, -0.18326205, -8.43218029E-9, -0.983064115)
 
-v2:AddToggle("Toggle_AutoTryLuck", {
+v2:AddToggle("Toggle_17", {
     Title = "Auto Try Luck",
     Default = false,
     Callback = function(v)
@@ -4267,7 +4169,7 @@ _G.AutoAcceptQuest = false
 _G.CurrentTargetBoss = nil
 _G.FindBoss = _G.FindBoss or (Boss and Boss[1])
 
-v2:AddSection("Boss Farm")
+v2:AddParagraph({Title = "â”€â”€ Boss Farm â”€â”€", Content = ""})
 
 local BossStatus = v2:AddParagraph({
     Title = "Boss Spawn Status",
@@ -4288,7 +4190,7 @@ task.spawn(function()
     end
 end)
 
-local BossDropdown = v2:AddDropdown("Dropdown_SelectBoss", {
+local BossDropdown = v2:AddDropdown("Dropdown_6", {
     Title = "Select Boss",
     Values = Boss,
     Default = Boss and Boss[1] or "The Gorilla King",
@@ -4327,7 +4229,7 @@ v2:AddButton({
     end
 })
 
-v2:AddToggle("Toggle_AutoFarmBossSelect", {
+v2:AddToggle("Toggle_18", {
     Title = "Auto Farm Boss Select",
     Default = GetSetting("AutoBoss_Save", false),
     Callback = function(v)
@@ -4338,7 +4240,7 @@ v2:AddToggle("Toggle_AutoFarmBossSelect", {
     end
 })
 
-v2:AddToggle("Toggle_AcceptQuestBoss", {
+v2:AddToggle("Toggle_19", {
     Title = "Accept Quest Boss",
     Default = GetSetting("AutoAcceptQuestBoss_Save", false),
     Callback = function(v)
@@ -4348,7 +4250,7 @@ v2:AddToggle("Toggle_AcceptQuestBoss", {
     end
 })
 
-v2:AddToggle("Toggle_FarmAllBosses", {
+v2:AddToggle("Toggle_20", {
     Title = "Farm All Bosses",
     Default = GetSetting("FarmAllBosses_Save", false),
     Callback = function(v)
@@ -4492,7 +4394,7 @@ end)
 end
 
 if World3 then
-v2:AddSection("Farm Mastery")
+v2:AddParagraph({Title = "â”€â”€ Farm Mastery â”€â”€", Content = ""})
 
 local CAKE_MOBS = X or {"Cookie Crafter", "Cake Guard", "Baking Staff", "Head Baker"}
 local BONE_MOBS = P or {"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy"}
@@ -4525,7 +4427,7 @@ local function HasAliveMob(mobList)
     return false
 end
 
-v2:AddDropdown("Dropdown_SelectIslandForMastery", {
+v2:AddDropdown("Dropdown_7", {
     Title = "Select Island For Mastery",
     Values = {"Cake", "Bone"},
     Default = GetSetting("SelectedIsland_Save", "Cake"),
@@ -4536,7 +4438,7 @@ v2:AddDropdown("Dropdown_SelectIslandForMastery", {
     end,
 })
 
-v2:AddToggle("Toggle_AutoFarmMasteryFruit", {
+v2:AddToggle("Toggle_21", {
     Title = "Auto Farm Mastery Fruit",
     Default = GetSetting("FarmMastery_Dev_Save", false),
     Callback = function(I)
@@ -4548,11 +4450,11 @@ v2:AddToggle("Toggle_AutoFarmMasteryFruit", {
 
 _G.FruitSkills = _G.FruitSkills or { Z = false, X = false, C = false, V = false, F = false }
 
-v2:AddToggle("Toggle_UseSkillZFruit", { Title = "Use Skill Z (Fruit)", Default = false, Callback = function(v) _G.FruitSkills.Z = v end })
-v2:AddToggle("Toggle_UseSkillXFruit", { Title = "Use Skill X (Fruit)", Default = false, Callback = function(v) _G.FruitSkills.X = v end })
-v2:AddToggle("Toggle_UseSkillCFruit", { Title = "Use Skill C (Fruit)", Default = false, Callback = function(v) _G.FruitSkills.C = v end })
-v2:AddToggle("Toggle_UseSkillVFruit", { Title = "Use Skill V (Fruit)", Default = false, Callback = function(v) _G.FruitSkills.V = v end })
-v2:AddToggle("Toggle_UseSkillFFruit", { Title = "Use Skill F (Fruit)", Default = false, Callback = function(v) _G.FruitSkills.F = v end })
+v2:AddToggle("Toggle_22", { Title = "Use Skill Z (Fruit)", Default = false, Callback = function(v) _G.FruitSkills.Z = v end })
+v2:AddToggle("Toggle_23", { Title = "Use Skill X (Fruit)", Default = false, Callback = function(v) _G.FruitSkills.X = v end })
+v2:AddToggle("Toggle_24", { Title = "Use Skill C (Fruit)", Default = false, Callback = function(v) _G.FruitSkills.C = v end })
+v2:AddToggle("Toggle_25", { Title = "Use Skill V (Fruit)", Default = false, Callback = function(v) _G.FruitSkills.V = v end })
+v2:AddToggle("Toggle_26", { Title = "Use Skill F (Fruit)", Default = false, Callback = function(v) _G.FruitSkills.F = v end })
 
 local function UseFruitSkills()
     weaponSc("Blox Fruit")
@@ -4631,7 +4533,7 @@ spawn(function()
     end
 end)
 
-v2:AddToggle("Toggle_AutoFarmMasteryGun", {
+v2:AddToggle("Toggle_27", {
     Title = "Auto Farm Mastery Gun",
     Default = GetSetting("FarmMastery_G_Save", false),
     Callback = function(I)
@@ -4712,7 +4614,7 @@ end)
 
 _G.FarmMastery_S = _G.FarmMastery_S or false
 
-v2:AddToggle("Toggle_AutoFarmMasteryAllSword", {
+v2:AddToggle("Toggle_28", {
     Title = "Auto Farm Mastery All Sword",
     Default = GetSetting("FarmMastery_S_Save", false),
     Callback = function(I)
@@ -4782,7 +4684,7 @@ spawn(function()
 end)
 
 end
-v4:AddToggle("Toggle_AutoActiveHaki", {
+v4:AddToggle("Toggle_29", {
 	Title = "Auto Active Haki",
 
 	Default = GetSetting("AutoHaki_Save", true),
@@ -4805,7 +4707,7 @@ spawn(function()
 		end);
 	end;
 end);
-v4:AddToggle("Toggle_AutoActiveV3", {
+v4:AddToggle("Toggle_30", {
 	Title = "Auto Active V3",
 
 	Default = GetSetting("AutoActiveV3_Save", false),
@@ -4818,7 +4720,7 @@ v4:AddToggle("Toggle_AutoActiveV3", {
 	end,
 })
 
-v4:AddToggle("Toggle_AutoActiveV4", {
+v4:AddToggle("Toggle_31", {
 	Title = "Auto Active V4",
 
 	Default = GetSetting("AutoActiveV4_Save", false),
@@ -4856,7 +4758,7 @@ spawn(function()
 		end);
 	end;
 end);
-v4:AddToggle("Toggle_AntiAFK", {
+v4:AddToggle("Toggle_32", {
 	Title = "Anti AFK",
 	Default = true,
 	Callback = function(I)
@@ -4868,7 +4770,7 @@ plr.Idled:connect(function()
 	wait(1);
 	vim2:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame);
 end);
-v4:AddToggle("Toggle_DisableNotify", {
+v4:AddToggle("Toggle_33", {
 	Title = "Disable Notify",
 
 	Default = GetSetting("DisableNotify_Save", false),
@@ -4894,7 +4796,7 @@ spawn(function()
 		end);
 	end;
 end);
-v4:AddToggle("Toggle_WalkonWater", {
+v4:AddToggle("Toggle_34", {
 	Title = "Walk on Water",
 	Default = true,
 	Callback = function(I)
@@ -4907,7 +4809,7 @@ v4:AddToggle("Toggle_WalkonWater", {
 		end;
 	end,
 });
-v4:AddInput("Input_BringMobsRange", {
+v4:AddInput("Input_2", {Finished = true, 
     Title = "Bring Mobs Range",
     Placeholder = "235",
     Default = tostring(_G.BringRange),
@@ -4919,7 +4821,7 @@ v4:AddInput("Input_BringMobsRange", {
     end
 })
 
-v4:AddInput("Input_SelectFarmHeight", {
+v4:AddInput("Input_3", {Finished = true, 
     Title = "Select Farm Height",
     Placeholder = "20",
     Default = tostring(_G.MobHeight),
@@ -4931,7 +4833,7 @@ v4:AddInput("Input_SelectFarmHeight", {
     end
 })
 
-v4:AddInput("Input_TweenSpeed", {
+v4:AddInput("Input_4", {Finished = true, 
     Title = "Tween Speed",
     Placeholder = "300",
     Default = "300",
@@ -4968,7 +4870,7 @@ local function HopServer()
     end
 end
 
-v4:AddToggle("Toggle_AutoHopkhiAdminJoin", {
+v4:AddToggle("Toggle_35", {
     Title = "Auto Hop khi Admin Join",
     Default = GetSetting("AutoHopAdmin_Save", true),
     Callback = function(value)
@@ -4996,7 +4898,7 @@ task.spawn(function()
 end)
 
 _G.NoClip = _G.NoClip or false
-v4:AddToggle("Toggle_NoClip", {
+v4:AddToggle("Toggle_36", {
     Title = "No Clip",
     Default = GetSetting("NoClip_Save", false),
     Callback = function(value)
@@ -5030,9 +4932,9 @@ end)
 _G.AutoHopServer = _G.AutoHopServer or false
 _G.HopDelay = _G.HopDelay or (30 * 60)
 
-v4:AddSection("Auto Hop")
+v4:AddParagraph({Title = "â”€â”€ Auto Hop â”€â”€", Content = ""})
 
-v4:AddToggle("Toggle_AutoHopServer", {
+v4:AddToggle("Toggle_37", {
     Title = "Auto Hop Server",
     Default = GetSetting("AutoHopServer_G_Save", false),
     Callback = function(value)
@@ -5045,12 +4947,12 @@ v4:AddToggle("Toggle_AutoHopServer", {
     end
 })
 
-v4:AddSlider("Slider_HopDelayMinutes", {
+v4:AddSlider("Slider_2", {
     Title = "Hop Delay (Minutes)",
     Min = 5,
     Max = 120,
     Default = GetSetting("HopDelay_G_Save", 30),
-    Rounding = 0,
+    Rounding = 1,
     Callback = function(value)
         _G.HopDelay = value * 60
         _G.SaveData["HopDelay_G_Save"] = value
@@ -5077,7 +4979,7 @@ task.spawn(function()
     end
 end)
 
-v5:AddSection("Fishing")
+v5:AddParagraph({Title = "â”€â”€ Fishing â”€â”€", Content = ""})
 
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -5105,7 +5007,7 @@ _G.AutoQuestComplete = false
 _G.AutoSellFish = false
 _G.AutoSkillZ = false
 
-v5:AddDropdown("Dropdown_SelectFishingRod", {
+v5:AddDropdown("Dropdown_8", {
     Title = "Select Fishing Rod",
     Values = {
         "Fishing Rod",
@@ -5122,7 +5024,7 @@ v5:AddDropdown("Dropdown_SelectFishingRod", {
     end
 })
 
-v5:AddDropdown("Dropdown_SelectBait", {
+v5:AddDropdown("Dropdown_9", {
     Title = "Select Bait",
     Values = {
         "Basic Bait",
@@ -5147,7 +5049,7 @@ v5:AddDropdown("Dropdown_SelectBait", {
     end
 })
 
-v5:AddToggle("Toggle_AutoBuyBait", {
+v5:AddToggle("Toggle_38", {
     Title = "Auto Buy Bait",
     Default = GetSetting("Fish_AutoBuyBait", false),
     Callback = function(Value)
@@ -5173,7 +5075,7 @@ task.spawn(function()
     end
 end)
 
-v5:AddToggle("Toggle_AutoFishing", {
+v5:AddToggle("Toggle_39", {
     Title = "Auto Fishing",
     Default = GetSetting("Fish_AutoFishing", false),
     Callback = function(Value)
@@ -5251,9 +5153,9 @@ task.spawn(function()
 end)
 
 if World1 then
-    v3:AddSection("Travel To Sea 2")
+    v3:AddParagraph({Title = "â”€â”€ Travel To Sea 2 â”€â”€", Content = ""})
 
-    local TravelDresToggle = v3:AddToggle("Toggle_AutoQuestSea2", {
+    local TravelDresToggle = v3:AddToggle("Toggle_40", {
         Title = "Auto Quest Sea 2",
         Default = GetSetting("TravelDres_Save", false),
         Callback = function(Value)
@@ -5309,9 +5211,9 @@ if World1 then
 end
 
 if World2 then
-    v3:AddSection("Travel To Sea 3")
+    v3:AddParagraph({Title = "â”€â”€ Travel To Sea 3 â”€â”€", Content = ""})
 
-    local AutoZouToggle = v3:AddToggle("Toggle_AutoQuestSea3", {
+    local AutoZouToggle = v3:AddToggle("Toggle_41", {
         Title = "Auto Quest Sea 3",
         Default = GetSetting("AutoZou_Save", false),
         Callback = function(Value)
@@ -5408,7 +5310,7 @@ if World2 then
     end)
 end
 
-v5:AddToggle("Toggle_AutoQuestFishing", {
+v5:AddToggle("Toggle_42", {
     Title = "Auto Quest Fishing",
     Default = GetSetting("Fish_AutoQuest", false),
     Callback = function(Value)
@@ -5441,7 +5343,7 @@ task.spawn(function()
     end
 end)
 
-v5:AddToggle("Toggle_AutoCompleteQuest", {
+v5:AddToggle("Toggle_43", {
     Title = "Auto Complete Quest",
     Default = GetSetting("Fish_AutoComplete", false),
     Callback = function(Value)
@@ -5467,7 +5369,7 @@ task.spawn(function()
     end
 end)
 
-v5:AddToggle("Toggle_AutoSellFish", {
+v5:AddToggle("Toggle_44", {
     Title = "Auto Sell Fish",
     Default = GetSetting("Fish_AutoSell", false),
     Callback = function(Value)
@@ -5493,7 +5395,7 @@ task.spawn(function()
     end
 end)
 
-v5:AddToggle("Toggle_Autouseskilloftherod", {
+v5:AddToggle("Toggle_45", {
     Title = "Auto use skill of the rod",
     Default = GetSetting("Fish_AutoSkillZ", false),
     Callback = function(Value)
@@ -5513,9 +5415,9 @@ task.spawn(function()
     end
 end)
 
-v3:AddSection("Quests")
+v3:AddParagraph({Title = "â”€â”€ Quests â”€â”€", Content = ""})
 
-v3:AddToggle("Toggle_AutoFarmObservation", {
+v3:AddToggle("Toggle_46", {
     Title = "Auto Farm Observation",
     Default = GetSetting("AutoObsFarm_Save", false),
     Callback = function(I)
@@ -5585,7 +5487,7 @@ spawn(function()
 end)
 
 if World3 then
-    v3:AddToggle("Toggle_AutoObservationV2", {
+    v3:AddToggle("Toggle_47", {
         Title = "Auto Observation V2",
         Default = GetSetting("AutoKenV2_Save", false),
         Callback = function(I)
@@ -5688,7 +5590,7 @@ if World3 then
         end;
     end);
 
-    v3:AddToggle("Toggle_AutoCitizenQuest", {
+    v3:AddToggle("Toggle_48", {
         Title = "Auto Citizen Quest",
         Default = false,
         Callback = function(I)
@@ -5744,9 +5646,9 @@ if World3 then
         end;
     end);
 
-    v3:AddSection("Cursed Swords");
+    v3:AddParagraph({Title = "â”€â”€ Cursed Swords â”€â”€", Content = ""});
 
-    local EliteProgressPara = v3:AddParagraph({ Title = "Elites Process ", Text = "" });
+    local EliteProgressPara = v3:AddParagraph({ Title = "Elites Process ", Content = "" });
     spawn(function()
         while wait(Sec) do
             pcall(function()
@@ -5755,7 +5657,7 @@ if World3 then
         end;
     end);
 
-    v3:AddToggle("Toggle_AutoEliteQuest", {
+    v3:AddToggle("Toggle_49", {
         Title = "Auto Elite Quest",
         Default = GetSetting("AutoEliteQuest_Save", false),
         Callback = function(I)
@@ -5793,7 +5695,7 @@ if World3 then
         end;
     end);
 
-    v3:AddToggle("Toggle_StopwhengotGod", {
+    v3:AddToggle("Toggle_50", {
         Title = "Stop when got God's Chalice",
         Default = GetSetting("StopChalice_Save", true),
         Callback = function(I)
@@ -5815,7 +5717,7 @@ if World3 then
         end;
     end);
 
-    v3:AddToggle("Toggle_AutoTushitaSword", {
+    v3:AddToggle("Toggle_51", {
         Title = "Auto Tushita Sword",
         Default = false,
         Callback = function(I)
@@ -5877,7 +5779,7 @@ if World3 then
         end;
     end);
 
-    v3:AddToggle("Toggle_AutoYamaSword", {
+    v3:AddToggle("Toggle_52", {
         Title = "Auto Yama Sword",
         Default = GetSetting("AutoYama_Save", false),
         Callback = function(I)
@@ -5914,9 +5816,9 @@ if World3 then
 end
 
 if World2 or World3 then
-    v3:AddSection("Buso/Aura Colours");
+    v3:AddParagraph({Title = "â”€â”€ Buso/Aura Colours â”€â”€", Content = ""});
 
-    v3:AddToggle("Toggle_TeleportBaristaHaki", {
+    v3:AddToggle("Toggle_53", {
         Title = "Teleport Barista Haki",
         Default = GetSetting("TpBarista_Save", false),
         Callback = function(I)
@@ -5949,7 +5851,7 @@ if World2 or World3 then
 end
 
 if World3 then
-    v3:AddToggle("Toggle_AutoRainbowHaki", {
+    v3:AddToggle("Toggle_54", {
         Title = "Auto Rainbow Haki",
         Default = GetSetting("AutoRainbowHaki_Save", false),
         Callback = function(I)
@@ -5970,7 +5872,7 @@ if World3 then
     end);
 end
 
-v3:AddToggle("Toggle_AcceptQuestBypassRisk", {
+v3:AddToggle("Toggle_55", {
     Title = "Accept Quest Bypass [Risk]",
     Default = GetSetting("BypassQuest_Save", false),
     Callback = function(I)
@@ -5980,10 +5882,10 @@ v3:AddToggle("Toggle_AcceptQuestBypassRisk", {
     end,
 })
 
-v3:AddSection("Item")
+v3:AddParagraph({Title = "â”€â”€ Item â”€â”€", Content = ""})
 if World2 then
 
-    v3:AddToggle("Toggle_AutoDragonTrident", {
+    v3:AddToggle("Toggle_56", {
         Title = "Auto Dragon Trident",
         Default = GetSetting("AutoTridentW2_Save", false),
         Callback = function(Value)
@@ -6013,7 +5915,7 @@ if World2 then
 end
 
 if World1 then
-    v3:AddToggle("Toggle_AutoSawSword", {
+    v3:AddToggle("Toggle_57", {
         Title = "Auto Saw Sword",
         Default = GetSetting("AutoSaw_Save", false),
         Callback = function(Value)
@@ -6043,7 +5945,7 @@ if World1 then
 end
 
 if World2 then
-    v3:AddToggle("Toggle_AutoSwanCoat", {
+    v3:AddToggle("Toggle_58", {
         Title = "Auto Swan Coat",
         Default = GetSetting("SwanCoat_Save", false),
         Callback = function(Value)
@@ -6073,7 +5975,7 @@ if World2 then
 end
 
 if World1 then
-    v3:AddToggle("Toggle_AutoMarineCoat", {
+    v3:AddToggle("Toggle_59", {
         Title = "Auto Marine Coat",
         Default = GetSetting("MarinesCoat_Save", false),
         Callback = function(Value)
@@ -6103,7 +6005,7 @@ if World1 then
 end
 
 if World1 then
-    v3:AddToggle("Toggle_AutoWardenSword", {
+    v3:AddToggle("Toggle_60", {
         Title = "Auto Warden Sword",
         Default = GetSetting("WardenBoss_Save", false),
         Callback = function(Value)
@@ -6133,7 +6035,7 @@ if World1 then
 end
 
 if World1 then
-    v3:AddToggle("Toggle_AutoCyborgSword", {
+    v3:AddToggle("Toggle_61", {
         Title = "Auto Cyborg Sword",
         Default = GetSetting("AutoColShad_Save", false),
         Callback = function(Value)
@@ -6163,7 +6065,7 @@ if World1 then
 end
 
 if World2 then
-    v3:AddToggle("Toggle_AutoMidnightBlade", {
+    v3:AddToggle("Toggle_62", {
         Title = "Auto Midnight Blade",
         Default = GetSetting("AutoEcBoss_Save", false),
         Callback = function(Value)
@@ -6202,7 +6104,7 @@ if World2 then
 end
 
 if World2 then
-    v3:AddToggle("Toggle_AutoRengokuSword", {
+    v3:AddToggle("Toggle_63", {
         Title = "Auto Rengoku Sword",
         Default = GetSetting("IceBossRen_Save", false),
         Callback = function(Value)
@@ -6230,7 +6132,7 @@ if World2 then
         end
     end)
 
-    v3:AddToggle("Toggle_AutoRengokuKey", {
+    v3:AddToggle("Toggle_64", {
         Title = "Auto Rengoku Key",
         Default = GetSetting("KeysRen_Save", false),
         Callback = function(Value)
@@ -6267,7 +6169,7 @@ if World2 then
 end
 
 if World2 or World3 then
-    v3:AddToggle("Toggle_AutoPoleV2Beta", {
+    v3:AddToggle("Toggle_65", {
         Title = "Auto Pole V2 [Beta]",
         Default = GetSetting("AutoPoleV2_Save", false),
         Callback = function(Value)
@@ -6320,7 +6222,7 @@ if World2 or World3 then
 end
 
 if World1 then
-    v3:AddToggle("Toggle_AutoBisentoV2", {
+    v3:AddToggle("Toggle_66", {
         Title = "Auto Bisento V2",
         Default = GetSetting("Greybeard_Save", false),
         Callback = function(Value)
@@ -6354,7 +6256,7 @@ if World1 then
 end
 
 if World3 then
-    v3:AddToggle("Toggle_AutoSkullGuitar", {
+    v3:AddToggle("Toggle_67", {
         Title = "Auto Skull Guitar",
         Default = GetSetting("Auto_Soul_Guitar_Save", false),
         Callback = function(Value)
@@ -6391,7 +6293,7 @@ if World3 then
 end
 
 if World3 then
-    v3:AddSection("Cursed Dual Katana (CDK)")
+    v3:AddParagraph({Title = "â”€â”€ Cursed Dual Katana (CDK) â”€â”€", Content = ""})
 
     local CDKProgress = v3:AddParagraph({
         Title = "CDK Progress",
@@ -6411,7 +6313,7 @@ if World3 then
         end
     end)
 
-    v3:AddToggle("Toggle_AutoYamaCDK", {
+    v3:AddToggle("Toggle_68", {
         Title = "Auto Yama CDK",
         Default = GetSetting("CDK_YM_Save", false),
         Callback = function(Value)
@@ -6421,7 +6323,7 @@ if World3 then
         end
     })
 
-    v3:AddToggle("Toggle_AutoTushitaCDK", {
+    v3:AddToggle("Toggle_69", {
         Title = "Auto Tushita CDK",
         Default = GetSetting("CDK_TS_Save", false),
         Callback = function(Value)
@@ -6431,7 +6333,7 @@ if World3 then
         end
     })
 
-    v3:AddToggle("Toggle_AutoKillCursedSkeletonBoss", {
+    v3:AddToggle("Toggle_70", {
         Title = "Auto Kill Cursed Skeleton Boss",
         Default = GetSetting("CDK_Boss_Save", false),
         Callback = function(Value)
@@ -6467,7 +6369,7 @@ if World3 then
 end
 
 if World3 then
-    v3:AddSection("True Triple Katana")
+    v3:AddParagraph({Title = "â”€â”€ True Triple Katana â”€â”€", Content = ""})
 
     v3:AddButton({
         Title = "Buy Legendary Sword",
@@ -6485,7 +6387,7 @@ if World3 then
         end
     })
 
-    v3:AddToggle("Toggle_TeleporttoLegendarySwordDealer", {
+    v3:AddToggle("Toggle_71", {
         Title = "Teleport to Legendary Sword Dealer",
         Default = GetSetting("Tp_LgS_Save", false),
         Callback = function(Value)
@@ -6511,7 +6413,7 @@ if World3 then
 end
 
 if World2 then
-    v3:AddToggle("Toggle_AutoSwanGlasses", {
+    v3:AddToggle("Toggle_72", {
         Title = "Auto Swan Glasses",
         Default = GetSetting("Auto_SwanGG_Save", false),
         Callback = function(Value)
@@ -6541,7 +6443,7 @@ if World2 then
 end
 
 if World3 then
-    v3:AddToggle("Toggle_AutoCanvendishSword", {
+    v3:AddToggle("Toggle_73", {
         Title = "Auto Canvendish Sword",
         Default = GetSetting("Auto_Cavender_Save", false),
         Callback = function(Value)
@@ -6571,7 +6473,7 @@ if World3 then
 end
 
 if World3 then
-    v3:AddToggle("Toggle_AutoBigmomCakeQueen", {
+    v3:AddToggle("Toggle_74", {
         Title = "Auto Bigmom (Cake Queen)",
         Default = GetSetting("AutoBigmom_Save", false),
         Callback = function(Value)
@@ -6601,7 +6503,7 @@ if World3 then
 end
 
 if World3 then
-    v3:AddToggle("Toggle_AutoTrainingDummy", {
+    v3:AddToggle("Toggle_75", {
         Title = "Auto Training Dummy",
         Default = GetSetting("DummyMan_Save", false),
         Callback = function(Value)
@@ -6634,7 +6536,7 @@ if World3 then
     end)
 end
 
-v6:AddSection("Sea Event / Setting Sail")
+v6:AddParagraph({Title = "â”€â”€ Sea Event / Setting Sail â”€â”€", Content = ""})
 
 local BoatList = {
         "Guardian",
@@ -6647,7 +6549,7 @@ local BoatList = {
         "Beast Hunter",
     }
 
-v6:AddDropdown("Dropdown_SelectBoats", {
+v6:AddDropdown("Dropdown_10", {
         Title = "Select Boats",
         Values = BoatList,
         Default = "Guardian",
@@ -6661,7 +6563,7 @@ if World3 then
         local DangerLevels = {
             "Lv 1", "Lv 2", "Lv 3", "Lv 4", "Lv 5", "Lv 6", "Lv Infinite"
         }
-        v6:AddDropdown("Dropdown_SelectLevelSea", {
+        v6:AddDropdown("Dropdown_11", {
             Title = "Select Level Sea",
             Values = DangerLevels,
             Default = "Lv 1",
@@ -6744,7 +6646,7 @@ v6:AddButton({
 
 _G.AutoPressW = _G.AutoPressW or false
 
-v6:AddToggle("Toggle_AutoPressWAutoDrive", {
+v6:AddToggle("Toggle_76", {
     Title = "Auto Press W (Auto Drive)",
     Default = GetSetting("AutoPressW_Save", false),
     Callback = function(Value)
@@ -6756,7 +6658,7 @@ v6:AddToggle("Toggle_AutoPressWAutoDrive", {
 
 _G.NoClipShip = _G.NoClipShip or false
 
-v6:AddToggle("Toggle_NoClipShip", {
+v6:AddToggle("Toggle_77", {
     Title = "No Clip Ship",
     Default = GetSetting("NoClipShip_Save", false),
     Callback = function(Value)
@@ -6800,7 +6702,7 @@ end)
 
 _G.SetSpeedBoat = 300
 
-v6:AddToggle("Toggle_ActivateBoatSpeed", {
+v6:AddToggle("Toggle_78", {
         Title = "Activate Boat Speed",
         Default = false,
         Callback = function(Value)
@@ -6808,7 +6710,7 @@ v6:AddToggle("Toggle_ActivateBoatSpeed", {
         end
     })
 
-v6:AddInput("Input_BoatSpeedValue", {
+v6:AddInput("Input_5", {Finished = true, 
         Title = "Boat Speed Value",
         Placeholder = "300",
         Default = "300",
@@ -6839,7 +6741,7 @@ task.spawn(function()
     end)
 end)
 
-v6:AddToggle("Toggle_AutoStartfarm", {
+v6:AddToggle("Toggle_79", {
         Title = "Auto Start farm",
         Default = false,
         Callback = function(Value)
@@ -6847,9 +6749,9 @@ v6:AddToggle("Toggle_AutoStartfarm", {
         end
     })
 
-v6:AddSection("Select what you will farm")
+v6:AddParagraph({Title = "â”€â”€ Select what you will farm â”€â”€", Content = ""})
 
-v6:AddToggle("Toggle_AutoAttackSeaBeast", {
+v6:AddToggle("Toggle_80", {
         Title = "Auto Attack Sea Beast",
         Default = false,
         Callback = function(Value)
@@ -6857,7 +6759,7 @@ v6:AddToggle("Toggle_AutoAttackSeaBeast", {
         end
     })
 
-v6:AddToggle("Toggle_AutoAttackPirateGrandBrigade", {
+v6:AddToggle("Toggle_81", {
     Title = "Auto Attack Pirate GrandBrigade",
     Default = false,
     Callback = function(Value)
@@ -6866,48 +6768,48 @@ v6:AddToggle("Toggle_AutoAttackPirateGrandBrigade", {
 })
 
 if World2 then
-    v6:AddSection("Go to Sea 3 for more options")
+    v6:AddParagraph({Title = "â”€â”€ Go to Sea 3 for more options â”€â”€", Content = ""})
 end
 if World1 then
-    v6:AddSection("Go to Sea 3 or Sea 2 for Farm maritime events")
+    v6:AddParagraph({Title = "â”€â”€ Go to Sea 3 or Sea 2 for Farm maritime events â”€â”€", Content = ""})
 end
 if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
-    v6:AddToggle("Toggle_AutoShark", {
+    v6:AddToggle("Toggle_82", {
         Title = "Auto Shark",
         Default = false,
         Callback = function(Value)
             _G.Shark = Value
         end
     })
-    v6:AddToggle("Toggle_AutoPiranha", {
+    v6:AddToggle("Toggle_83", {
         Title = "Auto Piranha",
         Default = false,
         Callback = function(Value)
             _G.Piranha = Value
         end
     })
-    v6:AddToggle("Toggle_AutoTerrorShark", {
+    v6:AddToggle("Toggle_84", {
         Title = "Auto Terror Shark",
         Default = false,
         Callback = function(Value)
             _G.TerrorShark = Value
         end
     })
-    v6:AddToggle("Toggle_AutoFishCrewMember", {
+    v6:AddToggle("Toggle_85", {
         Title = "Auto Fish Crew Member",
         Default = false,
         Callback = function(Value)
             _G.MobCrew = Value
         end
     })
-    v6:AddToggle("Toggle_AutoHauntedCrewMember", {
+    v6:AddToggle("Toggle_86", {
         Title = "Auto Haunted Crew Member",
         Default = false,
         Callback = function(Value)
             _G.HCM = Value
         end
     })
-    v6:AddToggle("Toggle_AutoAttackFishBoat", {
+    v6:AddToggle("Toggle_87", {
         Title = "Auto Attack Fish Boat",
         Default = false,
         Callback = function(Value)
@@ -6917,7 +6819,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
 end
 
 if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
-    v6:AddSection("Frozen Dimension")
+    v6:AddParagraph({Title = "â”€â”€ Frozen Dimension â”€â”€", Content = ""})
 
     v6:AddButton({
         Title = "Buy Spy",
@@ -6926,7 +6828,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         end
     })
 
-    v6:AddToggle("Toggle_TeleportFrozenDimension", {
+    v6:AddToggle("Toggle_88", {
         Title = "Teleport Frozen Dimension",
         Default = GetSetting("FrozenTP_Save", false),
         Callback = function(Value)
@@ -6949,7 +6851,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         end
     end)
 
-    v6:AddToggle("Toggle_AutoAttackLeviathan", {
+    v6:AddToggle("Toggle_89", {
         Title = "Auto Attack Leviathan",
         Default = false,
         Callback = function(Value)
@@ -6957,9 +6859,9 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         end
     })
 
-    v6:AddSection("Kitsune Island / Event")
+    v6:AddParagraph({Title = "â”€â”€ Kitsune Island / Event â”€â”€", Content = ""})
 
-    v6:AddToggle("Toggle_AutoFindKitsuneIsland", {
+    v6:AddToggle("Toggle_90", {
         Title = "Auto Find Kitsune Island",
         Default = GetSetting("FindKitsune_Save", false),
         Callback = function(Value)
@@ -7006,7 +6908,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         end
     end)
 
-    v6:AddToggle("Toggle_AutoTeleporttoShrineActived", {
+    v6:AddToggle("Toggle_91", {
         Title = "Auto Teleport to Shrine Actived",
         Default = false,
         Callback = function(Value)
@@ -7038,7 +6940,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         end
     end)
 
-    v6:AddToggle("Toggle_AutoCollectAzureEmber", {
+    v6:AddToggle("Toggle_92", {
         Title = "Auto Collect Azure Ember",
         Default = GetSetting("CollectAzureEmber_Save", false),
         Callback = function(Value)
@@ -7063,7 +6965,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         end
     end)
 
-    v6:AddToggle("Toggle_AutoTradeAzureEmber", {
+    v6:AddToggle("Toggle_93", {
         Title = "Auto Trade Azure Ember",
         Default = GetSetting("TradeAzureEmber_Save", false),
         Callback = function(Value)
@@ -7100,7 +7002,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
     })
 end
 
-v6:AddSection("Skill Selection")
+v6:AddParagraph({Title = "â”€â”€ Skill Selection â”€â”€", Content = ""})
 
 _G.SelectedSkills = _G.SelectedSkills or {
     Melee = {Z = false, X = false, C = false},
@@ -7113,7 +7015,7 @@ if _G.SaveData and _G.SaveData.SelectedSkills then
     _G.SelectedSkills = _G.SaveData.SelectedSkills
 end
 
-v6:AddToggle("Toggle_MeleeZ", {
+v6:AddToggle("Toggle_94", {
     Title = "Melee Z",
     Default = _G.SelectedSkills.Melee.Z,
     Callback = function(Value)
@@ -7123,7 +7025,7 @@ v6:AddToggle("Toggle_MeleeZ", {
     end
 })
 
-v6:AddToggle("Toggle_MeleeX", {
+v6:AddToggle("Toggle_95", {
     Title = "Melee X",
     Default = _G.SelectedSkills.Melee.X,
     Callback = function(Value)
@@ -7133,7 +7035,7 @@ v6:AddToggle("Toggle_MeleeX", {
     end
 })
 
-v6:AddToggle("Toggle_MeleeC", {
+v6:AddToggle("Toggle_96", {
     Title = "Melee C",
     Default = _G.SelectedSkills.Melee.C,
     Callback = function(Value)
@@ -7143,7 +7045,7 @@ v6:AddToggle("Toggle_MeleeC", {
     end
 })
 
-v6:AddToggle("Toggle_SwordZ", {
+v6:AddToggle("Toggle_97", {
     Title = "Sword Z",
     Default = _G.SelectedSkills.Sword.Z,
     Callback = function(Value)
@@ -7153,7 +7055,7 @@ v6:AddToggle("Toggle_SwordZ", {
     end
 })
 
-v6:AddToggle("Toggle_SwordX", {
+v6:AddToggle("Toggle_98", {
     Title = "Sword X",
     Default = _G.SelectedSkills.Sword.X,
     Callback = function(Value)
@@ -7163,7 +7065,7 @@ v6:AddToggle("Toggle_SwordX", {
     end
 })
 
-v6:AddToggle("Toggle_BloxFruitZ", {
+v6:AddToggle("Toggle_99", {
     Title = "Blox Fruit Z",
     Default = _G.SelectedSkills["Blox Fruit"].Z,
     Callback = function(Value)
@@ -7174,7 +7076,7 @@ v6:AddToggle("Toggle_BloxFruitZ", {
     end
 })
 
-v6:AddToggle("Toggle_BloxFruitX", {
+v6:AddToggle("Toggle_100", {
     Title = "Blox Fruit X",
     Default = _G.SelectedSkills["Blox Fruit"].X,
     Callback = function(Value)
@@ -7185,7 +7087,7 @@ v6:AddToggle("Toggle_BloxFruitX", {
     end
 })
 
-v6:AddToggle("Toggle_BloxFruitC", {
+v6:AddToggle("Toggle_101", {
     Title = "Blox Fruit C",
     Default = _G.SelectedSkills["Blox Fruit"].C,
     Callback = function(Value)
@@ -7196,7 +7098,7 @@ v6:AddToggle("Toggle_BloxFruitC", {
     end
 })
 
-v6:AddToggle("Toggle_BloxFruitV", {
+v6:AddToggle("Toggle_102", {
     Title = "Blox Fruit V",
     Default = _G.SelectedSkills["Blox Fruit"].V,
     Callback = function(Value)
@@ -7207,7 +7109,7 @@ v6:AddToggle("Toggle_BloxFruitV", {
     end
 })
 
-v6:AddToggle("Toggle_BloxFruitF", {
+v6:AddToggle("Toggle_103", {
     Title = "Blox Fruit F",
     Default = _G.SelectedSkills["Blox Fruit"].F,
     Callback = function(Value)
@@ -7218,7 +7120,7 @@ v6:AddToggle("Toggle_BloxFruitF", {
     end
 })
 
-v6:AddToggle("Toggle_GunZ", {
+v6:AddToggle("Toggle_104", {
     Title = "Gun Z",
     Default = _G.SelectedSkills.Gun.Z,
     Callback = function(Value)
@@ -7228,7 +7130,7 @@ v6:AddToggle("Toggle_GunZ", {
     end
 })
 
-v6:AddToggle("Toggle_GunX", {
+v6:AddToggle("Toggle_105", {
     Title = "Gun X",
     Default = _G.SelectedSkills.Gun.X,
     Callback = function(Value)
@@ -7238,7 +7140,7 @@ v6:AddToggle("Toggle_GunX", {
     end
 })
 
-v7:AddSection("Prehistoric Island")
+v7:AddParagraph({Title = "â”€â”€ Prehistoric Island â”€â”€", Content = ""})
 
 local PrehistoricStatus = v7:AddParagraph({
     Title = "Prehistoric Island Status",
@@ -7257,7 +7159,7 @@ task.spawn(function()
     end
 end)
 
-v7:AddSection("Skill Selection (Prehistoric)")
+v7:AddParagraph({Title = "â”€â”€ Skill Selection (Prehistoric) â”€â”€", Content = ""})
 
 _G.PrehistoricSkills = _G.PrehistoricSkills or {
     Melee = {Z = true, X = true, C = true},
@@ -7298,7 +7200,7 @@ local function UsePrehistoricSkills()
     if _G.PrehistoricSkills.Gun.X then Useskills("Gun", "X") end
 end
 
-v7:AddToggle("Toggle_PrehistoricMeleeZ", {
+v7:AddToggle("Toggle_106", {
     Title = "Prehistoric - Melee Z",
     Default = _G.PrehistoricSkills.Melee.Z,
     Callback = function(Value)
@@ -7308,7 +7210,7 @@ v7:AddToggle("Toggle_PrehistoricMeleeZ", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricMeleeX", {
+v7:AddToggle("Toggle_107", {
     Title = "Prehistoric - Melee X",
     Default = _G.PrehistoricSkills.Melee.X,
     Callback = function(Value)
@@ -7318,7 +7220,7 @@ v7:AddToggle("Toggle_PrehistoricMeleeX", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricMeleeC", {
+v7:AddToggle("Toggle_108", {
     Title = "Prehistoric - Melee C",
     Default = _G.PrehistoricSkills.Melee.C,
     Callback = function(Value)
@@ -7328,7 +7230,7 @@ v7:AddToggle("Toggle_PrehistoricMeleeC", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricSwordZ", {
+v7:AddToggle("Toggle_109", {
     Title = "Prehistoric - Sword Z",
     Default = _G.PrehistoricSkills.Sword.Z,
     Callback = function(Value)
@@ -7338,7 +7240,7 @@ v7:AddToggle("Toggle_PrehistoricSwordZ", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricSwordX", {
+v7:AddToggle("Toggle_110", {
     Title = "Prehistoric - Sword X",
     Default = _G.PrehistoricSkills.Sword.X,
     Callback = function(Value)
@@ -7348,7 +7250,7 @@ v7:AddToggle("Toggle_PrehistoricSwordX", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricFruitZ", {
+v7:AddToggle("Toggle_111", {
     Title = "Prehistoric - Fruit Z",
     Default = _G.PrehistoricSkills["Blox Fruit"].Z,
     Callback = function(Value)
@@ -7358,7 +7260,7 @@ v7:AddToggle("Toggle_PrehistoricFruitZ", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricFruitX", {
+v7:AddToggle("Toggle_112", {
     Title = "Prehistoric - Fruit X",
     Default = _G.PrehistoricSkills["Blox Fruit"].X,
     Callback = function(Value)
@@ -7368,7 +7270,7 @@ v7:AddToggle("Toggle_PrehistoricFruitX", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricFruitC", {
+v7:AddToggle("Toggle_113", {
     Title = "Prehistoric - Fruit C",
     Default = _G.PrehistoricSkills["Blox Fruit"].C,
     Callback = function(Value)
@@ -7378,7 +7280,7 @@ v7:AddToggle("Toggle_PrehistoricFruitC", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricFruitV", {
+v7:AddToggle("Toggle_114", {
     Title = "Prehistoric - Fruit V",
     Default = _G.PrehistoricSkills["Blox Fruit"].V,
     Callback = function(Value)
@@ -7388,7 +7290,7 @@ v7:AddToggle("Toggle_PrehistoricFruitV", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricFruitF", {
+v7:AddToggle("Toggle_115", {
     Title = "Prehistoric - Fruit F",
     Default = _G.PrehistoricSkills["Blox Fruit"].F,
     Callback = function(Value)
@@ -7398,7 +7300,7 @@ v7:AddToggle("Toggle_PrehistoricFruitF", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricGunZ", {
+v7:AddToggle("Toggle_116", {
     Title = "Prehistoric - Gun Z",
     Default = _G.PrehistoricSkills.Gun.Z,
     Callback = function(Value)
@@ -7408,7 +7310,7 @@ v7:AddToggle("Toggle_PrehistoricGunZ", {
     end
 })
 
-v7:AddToggle("Toggle_PrehistoricGunX", {
+v7:AddToggle("Toggle_117", {
     Title = "Prehistoric - Gun X",
     Default = _G.PrehistoricSkills.Gun.X,
     Callback = function(Value)
@@ -7418,9 +7320,9 @@ v7:AddToggle("Toggle_PrehistoricGunX", {
     end
 })
 
-v7:AddSection("Main Prehistoric Options")
+v7:AddParagraph({Title = "â”€â”€ Main Prehistoric Options â”€â”€", Content = ""})
 
-v7:AddToggle("Toggle_AutoFindPrehistoricIsland", {
+v7:AddToggle("Toggle_118", {
     Title = "Auto Find Prehistoric Island",
     Default = GetSetting("Prehis_Find_Save", false),
     Callback = function(Value)
@@ -7430,7 +7332,7 @@ v7:AddToggle("Toggle_AutoFindPrehistoricIsland", {
     end
 })
 
-v7:AddToggle("Toggle_AutoStartPrehistoricEvent", {
+v7:AddToggle("Toggle_119", {
     Title = "Auto Start Prehistoric Event",
     Default = GetSetting("AutoStartPrehistoric_Save", false),
     Callback = function(Value)
@@ -7440,7 +7342,7 @@ v7:AddToggle("Toggle_AutoStartPrehistoricEvent", {
     end
 })
 
-v7:AddToggle("Toggle_AutoPatchRemoveLava", {
+v7:AddToggle("Toggle_120", {
     Title = "Auto Patch (Remove Lava)",
     Default = GetSetting("Prehis_Skills_Save", false),
     Callback = function(Value)
@@ -7452,7 +7354,7 @@ v7:AddToggle("Toggle_AutoPatchRemoveLava", {
 
 _G.KillAura = GetSetting("KillAura_Save", false)
 
-v7:AddToggle("Toggle_KillAura", {
+v7:AddToggle("Toggle_121", {
     Title = "Kill Aura",
     Default = _G.KillAura,
     Callback = function(Value)
@@ -7520,7 +7422,7 @@ v7:AddButton({
     end
 })
 
-v7:AddToggle("Toggle_AutoKillLavaGolem", {
+v7:AddToggle("Toggle_122", {
     Title = "Auto Kill Lava Golem",
     Default = GetSetting("Prehis_KillGolem_Save", false),
     Callback = function(Value)
@@ -7530,7 +7432,7 @@ v7:AddToggle("Toggle_AutoKillLavaGolem", {
     end
 })
 
-v7:AddToggle("Toggle_AutoCollectDinoBones", {
+v7:AddToggle("Toggle_123", {
     Title = "Auto Collect Dino Bones",
     Default = GetSetting("Prehis_DB_Save", false),
     Callback = function(Value)
@@ -7540,7 +7442,7 @@ v7:AddToggle("Toggle_AutoCollectDinoBones", {
     end
 })
 
-v7:AddToggle("Toggle_AutoCollectDragonEggs", {
+v7:AddToggle("Toggle_124", {
     Title = "Auto Collect Dragon Eggs",
     Default = GetSetting("Prehis_DE_Save", false),
     Callback = function(Value)
@@ -7714,7 +7616,7 @@ spawn(function()
     end
 end)
 
-v7:AddSection("Volcanic Crafting")
+v7:AddParagraph({Title = "â”€â”€ Volcanic Crafting â”€â”€", Content = ""})
 
 v7:AddButton({
     Title = "Craft Volcanic Magnet (Manual)",
@@ -7732,7 +7634,7 @@ v7:AddButton({
 })
 
 _G.AutoCraftVolcanic = _G.AutoCraftVolcanic or false
-v7:AddToggle("Toggle_AutoCraftVolcanicMagnet", {
+v7:AddToggle("Toggle_125", {
     Title = "Auto Craft Volcanic Magnet",
     Default = GetSetting("AutoCraftVolcanic_Save", false),
     Callback = function(Value)
@@ -7753,9 +7655,9 @@ task.spawn(function()
     end
 end)
 
-v7:AddSection("Drago Trials")
+v7:AddParagraph({Title = "â”€â”€ Drago Trials â”€â”€", Content = ""})
 
-v7:AddToggle("Toggle_TweenToUpgradeDragoTrial", {
+v7:AddToggle("Toggle_126", {
     Title = "Tween To Upgrade Drago Trial",
     Default = GetSetting("UPGDrago_Save", false),
     Callback = function(Value)
@@ -7765,7 +7667,7 @@ v7:AddToggle("Toggle_TweenToUpgradeDragoTrial", {
     end
 })
 
-v7:AddToggle("Toggle_AutoDragoV1GetDragonEgg", {
+v7:AddToggle("Toggle_127", {
     Title = "Auto Drago (V1) - Get Dragon Egg",
     Default = GetSetting("DragoV1_Save", false),
     Callback = function(Value)
@@ -7775,7 +7677,7 @@ v7:AddToggle("Toggle_AutoDragoV1GetDragonEgg", {
     end
 })
 
-v7:AddToggle("Toggle_AutoDragoV2FireFlowers", {
+v7:AddToggle("Toggle_128", {
     Title = "Auto Drago (V2) - Fire Flowers",
     Default = GetSetting("AutoFireFlowers_Save", false),
     Callback = function(Value)
@@ -7785,7 +7687,7 @@ v7:AddToggle("Toggle_AutoDragoV2FireFlowers", {
     end
 })
 
-v7:AddToggle("Toggle_AutoDragoV3TerrorSharkSeaBeast", {
+v7:AddToggle("Toggle_129", {
     Title = "Auto Drago (V3) - Terror Shark/Sea Beast",
     Default = GetSetting("DragoV3_Save", false),
     Callback = function(Value)
@@ -7795,7 +7697,7 @@ v7:AddToggle("Toggle_AutoDragoV3TerrorSharkSeaBeast", {
     end
 })
 
-v7:AddToggle("Toggle_AutoRelicDragoTrialBeta", {
+v7:AddToggle("Toggle_130", {
     Title = "Auto Relic Drago Trial [Beta]",
     Default = GetSetting("Relic123_Save", false),
     Callback = function(Value)
@@ -7805,7 +7707,7 @@ v7:AddToggle("Toggle_AutoRelicDragoTrialBeta", {
     end
 })
 
-v7:AddToggle("Toggle_AutoTrainDragov4", {
+v7:AddToggle("Toggle_131", {
     Title = "Auto Train Drago v4",
     Default = GetSetting("TrainDrago_Save", false),
     Callback = function(Value)
@@ -7815,7 +7717,7 @@ v7:AddToggle("Toggle_AutoTrainDragov4", {
     end
 })
 
-v7:AddToggle("Toggle_TweentoDragoTrialsInsideVolcano", {
+v7:AddToggle("Toggle_132", {
     Title = "Tween to Drago Trials (Inside Volcano)",
     Default = GetSetting("TpDrago_Prehis_Save", false),
     Callback = function(Value)
@@ -7825,7 +7727,7 @@ v7:AddToggle("Toggle_TweentoDragoTrialsInsideVolcano", {
     end
 })
 
-v7:AddToggle("Toggle_SwapDragoRaceBuy", {
+v7:AddToggle("Toggle_133", {
     Title = "Swap Drago Race (Buy)",
     Default = GetSetting("BuyDrago_Save", false),
     Callback = function(Value)
@@ -7835,7 +7737,7 @@ v7:AddToggle("Toggle_SwapDragoRaceBuy", {
     end
 })
 
-v7:AddToggle("Toggle_UpgradeDragonTalonWithUzoth", {
+v7:AddToggle("Toggle_134", {
     Title = "Upgrade Dragon Talon With Uzoth",
     Default = GetSetting("DT_Uzoth_Save", false),
     Callback = function(Value)
@@ -7845,7 +7747,7 @@ v7:AddToggle("Toggle_UpgradeDragonTalonWithUzoth", {
     end
 })
 
-v7:AddSection("Dojo Quest")
+v7:AddParagraph({Title = "â”€â”€ Dojo Quest â”€â”€", Content = ""})
 
 v7:AddButton({
     Title = "Teleport To Dragon Dojo",
@@ -7857,7 +7759,7 @@ v7:AddButton({
     end
 })
 
-v7:AddToggle("Toggle_AutoDojoTrainerCompleteQuests", {
+v7:AddToggle("Toggle_135", {
     Title = "Auto Dojo Trainer (Complete Quests)",
     Default = GetSetting("Dojoo_Save", false),
     Callback = function(Value)
@@ -7867,7 +7769,7 @@ v7:AddToggle("Toggle_AutoDojoTrainerCompleteQuests", {
     end
 })
 
-v7:AddToggle("Toggle_AutoDragonHunterHydraVenomous", {
+v7:AddToggle("Toggle_136", {
     Title = "Auto Dragon Hunter (Hydra/Venomous)",
     Default = GetSetting("FarmBlazeEM_Save", false),
     Callback = function(Value)
@@ -8155,7 +8057,7 @@ spawn(function()
     end
 end)
 
-v8:AddSection("Mirage Island / Full Moon")
+v8:AddParagraph({Title = "â”€â”€ Mirage Island / Full Moon â”€â”€", Content = ""})
 
 local FullMoonStatus = v8:AddParagraph({
     Title = "Full Moon Status",
@@ -8200,9 +8102,9 @@ task.spawn(function()
     end
 end)
 
-v8:AddSection("Mirage Island Features")
+v8:AddParagraph({Title = "â”€â”€ Mirage Island Features â”€â”€", Content = ""})
 
-v8:AddToggle("Toggle_AutoFindMirageIsland", {
+v8:AddToggle("Toggle_137", {
     Title = "Auto Find Mirage Island",
     Default = GetSetting("FindMirage_Save", false),
     Callback = function(Value)
@@ -8212,7 +8114,7 @@ v8:AddToggle("Toggle_AutoFindMirageIsland", {
     end
 })
 
-v8:AddToggle("Toggle_AutoTweenToMirageIsland", {
+v8:AddToggle("Toggle_138", {
     Title = "Auto Tween To Mirage Island",
     Default = GetSetting("AutoMysticIsland_Save", false),
     Callback = function(Value)
@@ -8222,7 +8124,7 @@ v8:AddToggle("Toggle_AutoTweenToMirageIsland", {
     end
 })
 
-v8:AddToggle("Toggle_AutoTweenToHighestPoint", {
+v8:AddToggle("Toggle_139", {
     Title = "Auto Tween To Highest Point",
     Default = GetSetting("HighestMirage_Save", false),
     Callback = function(Value)
@@ -8232,7 +8134,7 @@ v8:AddToggle("Toggle_AutoTweenToHighestPoint", {
     end
 })
 
-v8:AddToggle("Toggle_EspMirageIsland", {
+v8:AddToggle("Toggle_140", {
     Title = "Esp Mirage Island",
     Default = GetSetting("MirageIslandESP_Save", false),
     Callback = function(Value)
@@ -8242,7 +8144,7 @@ v8:AddToggle("Toggle_EspMirageIsland", {
     end
 })
 
-v8:AddToggle("Toggle_AutoCollectMirageChest", {
+v8:AddToggle("Toggle_141", {
     Title = "Auto Collect Mirage Chest",
     Default = GetSetting("FarmChestM_Save", false),
     Callback = function(Value)
@@ -8252,7 +8154,7 @@ v8:AddToggle("Toggle_AutoCollectMirageChest", {
     end
 })
 
-v8:AddToggle("Toggle_ChangeTransparencySeeMirage", {
+v8:AddToggle("Toggle_142", {
     Title = "Change Transparency (See Mirage)",
     Default = GetSetting("MirageSeeThrough_Save", false),
     Callback = function(Value)
@@ -8262,7 +8164,7 @@ v8:AddToggle("Toggle_ChangeTransparencySeeMirage", {
     end
 })
 
-v8:AddToggle("Toggle_AutoCollectGear", {
+v8:AddToggle("Toggle_143", {
     Title = "Auto Collect Gear",
     Default = GetSetting("TPGEAR_Save", false),
     Callback = function(Value)
@@ -8406,9 +8308,9 @@ spawn(function()
     end
 end)
 
-v8:AddSection("Advanced Fruit Dealer")
+v8:AddParagraph({Title = "â”€â”€ Advanced Fruit Dealer â”€â”€", Content = ""})
 
-v8:AddToggle("Toggle_AutoTweenAdvancedFruitDealer", {
+v8:AddToggle("Toggle_144", {
     Title = "Auto Tween Advanced Fruit Dealer",
     Default = GetSetting("Addealer_Save", false),
     Callback = function(Value)
@@ -8432,7 +8334,7 @@ spawn(function()
     end
 end)
 
-v8:AddSection("Race V4 / Temple of Time")
+v8:AddParagraph({Title = "â”€â”€ Race V4 / Temple of Time â”€â”€", Content = ""})
 
 v8:AddButton({
     Title = "Teleport to Temple of Time",
@@ -8538,9 +8440,9 @@ task.spawn(function()
     end
 end)
 
-v8:AddSection("Trials Quest V4")
+v8:AddParagraph({Title = "â”€â”€ Trials Quest V4 â”€â”€", Content = ""})
 
-v8:AddToggle("Toggle_AutoPullLever", {
+v8:AddToggle("Toggle_145", {
     Title = "Auto Pull Lever",
     Default = GetSetting("Lver_Save", false),
     Callback = function(Value)
@@ -8550,7 +8452,7 @@ v8:AddToggle("Toggle_AutoPullLever", {
     end
 })
 
-v8:AddToggle("Toggle_AutoTrainV4", {
+v8:AddToggle("Toggle_146", {
     Title = "Auto Train V4",
     Default = GetSetting("AcientOne_Save", false),
     Callback = function(Value)
@@ -8560,7 +8462,7 @@ v8:AddToggle("Toggle_AutoTrainV4", {
     end
 })
 
-v8:AddToggle("Toggle_AutoTeleporttoRaceDoors", {
+v8:AddToggle("Toggle_147", {
     Title = "Auto Teleport to Race Doors",
     Default = GetSetting("TPDoor_Save", false),
     Callback = function(Value)
@@ -8570,7 +8472,7 @@ v8:AddToggle("Toggle_AutoTeleporttoRaceDoors", {
     end
 })
 
-v8:AddToggle("Toggle_AutoCompleteTrials", {
+v8:AddToggle("Toggle_148", {
     Title = "Auto Complete Trials",
     Default = GetSetting("Complete_Trials_Save", false),
     Callback = function(Value)
@@ -8580,7 +8482,7 @@ v8:AddToggle("Toggle_AutoCompleteTrials", {
     end
 })
 
-v8:AddToggle("Toggle_AutoKillPlayerAfterTrial", {
+v8:AddToggle("Toggle_149", {
     Title = "Auto Kill Player After Trial",
     Default = GetSetting("Defeating_Save", false),
     Callback = function(Value)
@@ -8746,9 +8648,9 @@ spawn(function()
     end
 end)
 
-v8:AddSection("Moon / Race Abilities")
+v8:AddParagraph({Title = "â”€â”€ Moon / Race Abilities â”€â”€", Content = ""})
 
-v8:AddToggle("Toggle_AutoLookAtMoon", {
+v8:AddToggle("Toggle_150", {
     Title = "Auto Look At Moon",
     Default = GetSetting("LookM_Save", false),
     Callback = function(Value)
@@ -8758,7 +8660,7 @@ v8:AddToggle("Toggle_AutoLookAtMoon", {
     end
 })
 
-v8:AddToggle("Toggle_LookMoonAutoV3", {
+v8:AddToggle("Toggle_151", {
     Title = "Look Moon + Auto V3",
     Default = GetSetting("LookMV3_Save", false),
     Callback = function(Value)
@@ -8798,9 +8700,9 @@ task.spawn(function()
     end
 end)
 
-v8:AddSection("Upgrade Races V2 And V3")
+v8:AddParagraph({Title = "â”€â”€ Upgrade Races V2 And V3 â”€â”€", Content = ""})
 
-v8:AddToggle("Toggle_AutoUpgradeMink", {
+v8:AddToggle("Toggle_152", {
     Title = "Auto Upgrade Mink",
     Default = GetSetting("Auto_Mink_Save", false),
     Callback = function(Value)
@@ -8810,7 +8712,7 @@ v8:AddToggle("Toggle_AutoUpgradeMink", {
     end
 })
 
-v8:AddToggle("Toggle_AutoUpgradeHuman", {
+v8:AddToggle("Toggle_153", {
     Title = "Auto Upgrade Human",
     Default = GetSetting("Auto_Human_Save", false),
     Callback = function(Value)
@@ -8820,7 +8722,7 @@ v8:AddToggle("Toggle_AutoUpgradeHuman", {
     end
 })
 
-v8:AddToggle("Toggle_AutoUpgradeAngel", {
+v8:AddToggle("Toggle_154", {
     Title = "Auto Upgrade Angel",
     Default = GetSetting("Auto_Skypiea_Save", false),
     Callback = function(Value)
@@ -8830,7 +8732,7 @@ v8:AddToggle("Toggle_AutoUpgradeAngel", {
     end
 })
 
-v8:AddToggle("Toggle_AutoUpgradeFishman", {
+v8:AddToggle("Toggle_155", {
     Title = "Auto Upgrade Fishman",
     Default = GetSetting("Auto_Fish_Save", false),
     Callback = function(Value)
@@ -9017,7 +8919,7 @@ spawn(function()
     end
 end)
 
-v9:AddSection("Fruits Options")
+v9:AddParagraph({Title = "â”€â”€ Fruits Options â”€â”€", Content = ""})
 
 local function formatNumber(num)
     local formatted = tostring(num)
@@ -9106,9 +9008,9 @@ v9:AddButton({
     end
 })
 
-v9:AddSection("Fruit Auto Functions")
+v9:AddParagraph({Title = "â”€â”€ Fruit Auto Functions â”€â”€", Content = ""})
 
-v9:AddToggle("Toggle_AutoRandomFruit", {
+v9:AddToggle("Toggle_156", {
     Title = "Auto Random Fruit",
     Default = GetSetting("Random_Auto_Save", false),
     Callback = function(Value)
@@ -9128,7 +9030,7 @@ spawn(function()
     end
 end)
 
-v9:AddToggle("Toggle_AutoDropFruit", {
+v9:AddToggle("Toggle_157", {
     Title = "Auto Drop Fruit",
     Default = GetSetting("DropFruit_Save", false),
     Callback = function(Value)
@@ -9148,7 +9050,7 @@ spawn(function()
     end
 end)
 
-v9:AddToggle("Toggle_AutoStoreFruit", {
+v9:AddToggle("Toggle_158", {
     Title = "Auto Store Fruit",
     Default = GetSetting("StoreF_Save", false),
     Callback = function(Value)
@@ -9168,7 +9070,7 @@ spawn(function()
     end
 end)
 
-v9:AddToggle("Toggle_AutoTweentoFruit", {
+v9:AddToggle("Toggle_159", {
     Title = "Auto Tween to Fruit",
     Default = GetSetting("TwFruits_Save", false),
     Callback = function(Value)
@@ -9192,7 +9094,7 @@ spawn(function()
     end
 end)
 
-v9:AddToggle("Toggle_AutoCollectFruit", {
+v9:AddToggle("Toggle_160", {
     Title = "Auto Collect Fruit",
     Default = GetSetting("InstanceF_Save", false),
     Callback = function(Value)
@@ -9212,7 +9114,7 @@ spawn(function()
     end
 end)
 
-v9:AddSection("Fruit Shop Sniper")
+v9:AddParagraph({Title = "â”€â”€ Fruit Shop Sniper â”€â”€", Content = ""})
 
 local FruitList = {
     "Rocket-Rocket", "Spin-Spin", "Blade-Blade", "Spring-Spring",
@@ -9229,7 +9131,7 @@ local FruitList = {
     "Yeti-Yeti", "Kitsune-Kitsune", "Dragon-Dragon"
 }
 
-v9:AddDropdown("Dropdown_SelectFruittoBuy", {
+v9:AddDropdown("Dropdown_12", {
     Title = "Select Fruit to Buy",
     Values = FruitList,
     Default = GetSetting("SelectFruit_Save", "Dough-Dough"),
@@ -9241,7 +9143,7 @@ v9:AddDropdown("Dropdown_SelectFruittoBuy", {
     end
 })
 
-v9:AddToggle("Toggle_AutoBuyFruitShopSniper", {
+v9:AddToggle("Toggle_161", {
     Title = "Auto Buy Fruit (Shop Sniper)",
     Default = GetSetting("AutoBuyFruitSniper_Save", false),
     Callback = function(Value)
@@ -9264,7 +9166,7 @@ spawn(function()
     end
 end)
 
-v9:AddSection("Fruit Stock Checker")
+v9:AddParagraph({Title = "â”€â”€ Fruit Stock Checker â”€â”€", Content = ""})
 
 local function CheckSpecificFruit(fruitName)
     local success, stock = pcall(function()
@@ -9294,7 +9196,7 @@ local function CheckSpecificFruit(fruitName)
     return false, nil
 end
 
-v9:AddDropdown("Dropdown_SelectFruittoCheck", {
+v9:AddDropdown("Dropdown_13", {
     Title = "Select Fruit to Check",
     Values = FruitList,
     Default = "Dough-Dough",
@@ -9333,7 +9235,7 @@ v9:AddButton({
     end
 })
 
-v9:AddToggle("Toggle_AutoNotifywhenFruitinStock", {
+v9:AddToggle("Toggle_162", {
     Title = "Auto Notify when Fruit in Stock",
     Default = GetSetting("AutoNotifyFruit_Save", false),
     Callback = function(Value)
@@ -9361,7 +9263,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddSection("Raid Status")
+v10:AddParagraph({Title = "â”€â”€ Raid Status â”€â”€", Content = ""})
 
 local RaidTimerStatus = v10:AddParagraph({
     Title = "Raid Timer",
@@ -9391,7 +9293,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddSection("Chip Selection")
+v10:AddParagraph({Title = "â”€â”€ Chip Selection â”€â”€", Content = ""})
 
 local RaidChipList = {
     "Flame", "Ice", "Quake", "Light", "Dark", "String",
@@ -9400,7 +9302,7 @@ local RaidChipList = {
 
 _G.SelectChip = _G.SelectChip or "Flame"
 
-v10:AddDropdown("Dropdown_SelectChip", {
+v10:AddDropdown("Dropdown_14", {
     Title = "Select Chip",
     Values = RaidChipList,
     Default = GetSetting("Raid_SelectChip", "Flame"),
@@ -9412,7 +9314,7 @@ v10:AddDropdown("Dropdown_SelectChip", {
     end
 })
 
-v10:AddSection("Buy Chip")
+v10:AddParagraph({Title = "â”€â”€ Buy Chip â”€â”€", Content = ""})
 
 v10:AddButton({
     Title = "Buy Chip with Beli",
@@ -9444,7 +9346,7 @@ v10:AddButton({
 })
 
 _G.AutoChipBeli = GetSetting("Raid_AutoChipBeli", false)
-v10:AddToggle("Toggle_AutoBuyChipBeli", {
+v10:AddToggle("Toggle_163", {
     Title = "Auto Buy Chip (Beli)",
     Default = _G.AutoChipBeli,
     Callback = function(Value)
@@ -9455,7 +9357,7 @@ v10:AddToggle("Toggle_AutoBuyChipBeli", {
 })
 
 _G.AutoChipFruit = GetSetting("Raid_AutoChipFruit", false)
-v10:AddToggle("Toggle_AutoBuyChipFruit", {
+v10:AddToggle("Toggle_164", {
     Title = "Auto Buy Chip (Fruit)",
     Default = _G.AutoChipFruit,
     Callback = function(Value)
@@ -9497,7 +9399,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddToggle("Toggle_GetFruitInventoryBelow1M", {
+v10:AddToggle("Toggle_165", {
     Title = "Get Fruit Inventory Below 1M",
     Default = GetSetting("AutoGetFruit_Save", false),
     Callback = function(Value)
@@ -9528,10 +9430,10 @@ spawn(function()
     end
 end)
 
-v10:AddSection("Raid Controls")
+v10:AddParagraph({Title = "â”€â”€ Raid Controls â”€â”€", Content = ""})
 
 _G.AutoStartRaid = GetSetting("Raid_AutoStartRaid", false)
-v10:AddToggle("Toggle_AutoStartRaid", {
+v10:AddToggle("Toggle_166", {
     Title = "Auto Start Raid",
     Default = _G.AutoStartRaid,
     Callback = function(Value)
@@ -9573,7 +9475,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddSection("Auto Farm Dungeon")
+v10:AddParagraph({Title = "â”€â”€ Auto Farm Dungeon â”€â”€", Content = ""})
 
 local RaidIslands = {"Island 1", "Island 2", "Island 3", "Island 4", "Island 5"}
 local CurrentTargetIsland = nil
@@ -9668,7 +9570,7 @@ local function MoveToNextIsland()
 end
 
 _G.AutoDungeonFarm = GetSetting("Raid_AutoDungeonFarm", false)
-v10:AddToggle("Toggle_AutoFarmDungeonNextFloor", {
+v10:AddToggle("Toggle_167", {
     Title = "Auto Farm Dungeon + Next Floor",
     Default = _G.AutoDungeonFarm,
     Callback = function(Value)
@@ -9733,7 +9635,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddSection("Teleport Floors")
+v10:AddParagraph({Title = "â”€â”€ Teleport Floors â”€â”€", Content = ""})
 
 v10:AddButton({
     Title = "TP to Floor 1 Start",
@@ -9790,10 +9692,10 @@ v10:AddButton({
     end
 })
 
-v10:AddSection("Awakening")
+v10:AddParagraph({Title = "â”€â”€ Awakening â”€â”€", Content = ""})
 
 _G.AutoAwaken = GetSetting("Raid_AutoAwaken", false)
-v10:AddToggle("Toggle_AutoAwakening", {
+v10:AddToggle("Toggle_168", {
     Title = "Auto Awakening",
     Default = _G.AutoAwaken,
     Callback = function(Value)
@@ -9814,7 +9716,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddSection("Law/Order Raid")
+v10:AddParagraph({Title = "â”€â”€ Law/Order Raid â”€â”€", Content = ""})
 
 v10:AddButton({
     Title = "Buy Law Microchip",
@@ -9835,7 +9737,7 @@ v10:AddButton({
 })
 
 _G.AutoBuyLawChip = GetSetting("Raid_AutoBuyLawChip", false)
-v10:AddToggle("Toggle_AutoBuyLawChip", {
+v10:AddToggle("Toggle_169", {
     Title = "Auto Buy Law Chip",
     Default = _G.AutoBuyLawChip,
     Callback = function(Value)
@@ -9856,7 +9758,7 @@ task.spawn(function()
 end)
 
 _G.AutoStartLawRaid = GetSetting("Raid_AutoStartLawRaid", false)
-v10:AddToggle("Toggle_AutoStartLawRaid", {
+v10:AddToggle("Toggle_170", {
     Title = "Auto Start Law Raid",
     Default = _G.AutoStartLawRaid,
     Callback = function(Value)
@@ -9877,7 +9779,7 @@ task.spawn(function()
 end)
 
 _G.AutoKillOrder = GetSetting("Raid_AutoKillOrder", false)
-v10:AddToggle("Toggle_AutoKillOrder", {
+v10:AddToggle("Toggle_171", {
     Title = "Auto Kill Order",
     Default = _G.AutoKillOrder,
     Callback = function(Value)
@@ -9907,10 +9809,10 @@ task.spawn(function()
     end
 end)
 
-v10:AddSection("Teleport")
+v10:AddParagraph({Title = "â”€â”€ Teleport â”€â”€", Content = ""})
 
 _G.TpLab = GetSetting("Raid_TpLab", false)
-v10:AddToggle("Toggle_AutoTeleporttoLab", {
+v10:AddToggle("Toggle_172", {
     Title = "Auto Teleport to Lab",
     Default = _G.TpLab,
     Callback = function(Value)
@@ -9932,13 +9834,13 @@ task.spawn(function()
     end
 end)
 
-v10:AddSection("Kill Aura")
+v10:AddParagraph({Title = "â”€â”€ Kill Aura â”€â”€", Content = ""})
 
 _G.KillAura = GetSetting("Raid_KillAura", false)
 _G.KillAuraRange = GetSetting("Raid_KillAuraRange", 500)
 _G.KillAuraDelay = GetSetting("Raid_KillAuraDelay", 2)
 
-v10:AddToggle("Toggle_KillAura_2", {
+v10:AddToggle("Toggle_173", {
     Title = "Kill Aura",
     Default = _G.KillAura,
     Callback = function(Value)
@@ -9948,7 +9850,7 @@ v10:AddToggle("Toggle_KillAura_2", {
     end
 })
 
-v10:AddInput("Input_KillAuraRange", {
+v10:AddInput("Input_6", {Finished = true, 
     Title = "Kill Aura Range",
     Placeholder = "500",
     Default = tostring(_G.KillAuraRange),
@@ -9962,7 +9864,7 @@ v10:AddInput("Input_KillAuraRange", {
     end
 })
 
-v10:AddInput("Input_KillAuraDelays", {
+v10:AddInput("Input_7", {Finished = true, 
     Title = "Kill Aura Delay (s)",
     Placeholder = "2",
     Default = tostring(_G.KillAuraDelay),
@@ -10027,7 +9929,7 @@ v10:AddButton({
     end
 })
 
-v11:AddSection("Travel - Worlds")
+v11:AddParagraph({Title = "â”€â”€ Travel - Worlds â”€â”€", Content = ""})
 
 v11:AddButton({
     Title = "Teleport Sea 1",
@@ -10050,14 +9952,14 @@ v11:AddButton({
     end
 })
 
-v11:AddSection("Travel - Island")
+v11:AddParagraph({Title = "â”€â”€ Travel - Island â”€â”€", Content = ""})
 
 local Location = {}
 for _, e in pairs(workspace._WorldOrigin.Locations:GetChildren()) do
     table.insert(Location, e.Name)
 end
 
-v11:AddDropdown("Dropdown_SelectTravelling", {
+v11:AddDropdown("Dropdown_15", {
     Title = "Select Travelling",
     Values = Location,
     Default = false,
@@ -10067,7 +9969,7 @@ v11:AddDropdown("Dropdown_SelectTravelling", {
     end,
 })
 
-v11:AddToggle("Toggle_AutoTravel", {
+v11:AddToggle("Toggle_174", {
     Title = "Auto Travel",
     Default = GetSetting("AutoTravelIsland_Save", false),
     Callback = function(Value)
@@ -10100,7 +10002,7 @@ v11:AddToggle("Toggle_AutoTravel", {
     end,
 })
 
-v11:AddSection("Travel - Portal")
+v11:AddParagraph({Title = "â”€â”€ Travel - Portal â”€â”€", Content = ""})
 
 local Location_Portal = {}
 if World1 then
@@ -10117,7 +10019,7 @@ elseif World3 then
     }
 end
 
-v11:AddDropdown("Dropdown_SelectPortal", {
+v11:AddDropdown("Dropdown_16", {
     Title = "Select Portal",
     Values = Location_Portal,
     Default = false,
@@ -10152,14 +10054,14 @@ v11:AddButton({
     end
 })
 
-v11:AddSection("Travel - NPCs")
+v11:AddParagraph({Title = "â”€â”€ Travel - NPCs â”€â”€", Content = ""})
 
 local NPCList = {}
 for _, npc in pairs(replicated.NPCs:GetChildren()) do
     table.insert(NPCList, npc.Name)
 end
 
-v11:AddDropdown("Dropdown_SelectNPCs", {
+v11:AddDropdown("Dropdown_17", {
     Title = "Select NPCs",
     Values = NPCList,
     Default = false,
@@ -10169,7 +10071,7 @@ v11:AddDropdown("Dropdown_SelectNPCs", {
     end,
 })
 
-v11:AddToggle("Toggle_AutoTweentoNPCs", {
+v11:AddToggle("Toggle_175", {
     Title = "Auto Tween to NPCs",
     Default = GetSetting("AutoTPNPC_Save", false),
     Callback = function(I)
@@ -10193,15 +10095,15 @@ spawn(function()
     end
 end)
 
-v13:AddSection("Stats Upgrade")
+v13:AddParagraph({Title = "â”€â”€ Stats Upgrade â”€â”€", Content = ""})
 
 local StatsValue = 10
-v13:AddSlider("Slider_StatsValue", {
+v13:AddSlider("Slider_3", {
     Title = "Stats Value",
     Min = 0,
     Max = 1000,
     Default = GetSetting("StatsValue_Save", 10),
-    Rounding = 0,
+    Rounding = 1,
     Callback = function(Value)
         StatsValue = Value
         _G.SaveData["StatsValue_Save"] = Value
@@ -10209,7 +10111,7 @@ v13:AddSlider("Slider_StatsValue", {
     end
 })
 
-v13:AddToggle("Toggle_AutoMelee", {
+v13:AddToggle("Toggle_176", {
     Title = "Auto Melee",
     Default = GetSetting("Auto_Melee_Save", false),
     Callback = function(Value)
@@ -10229,7 +10131,7 @@ spawn(function()
     end
 end)
 
-v13:AddToggle("Toggle_AutoSword", {
+v13:AddToggle("Toggle_177", {
     Title = "Auto Sword",
     Default = GetSetting("Auto_Sword_Save", false),
     Callback = function(Value)
@@ -10249,7 +10151,7 @@ spawn(function()
     end
 end)
 
-v13:AddToggle("Toggle_AutoGun", {
+v13:AddToggle("Toggle_178", {
     Title = "Auto Gun",
     Default = GetSetting("Auto_Gun_Save", false),
     Callback = function(Value)
@@ -10269,7 +10171,7 @@ spawn(function()
     end
 end)
 
-v13:AddToggle("Toggle_AutoBloxFruit", {
+v13:AddToggle("Toggle_179", {
     Title = "Auto Blox Fruit",
     Default = GetSetting("Auto_DevilFruit_Save", false),
     Callback = function(Value)
@@ -10289,7 +10191,7 @@ spawn(function()
     end
 end)
 
-v13:AddToggle("Toggle_AutoDefense", {
+v13:AddToggle("Toggle_180", {
     Title = "Auto Defense",
     Default = GetSetting("Auto_Defense_Save", false),
     Callback = function(Value)
@@ -10309,7 +10211,7 @@ spawn(function()
     end
 end)
 
-v13:AddSection("ESP")
+v13:AddParagraph({Title = "â”€â”€ ESP â”€â”€", Content = ""})
 
 local NumberESP = math.random(1, 1000000)
 local PlayerESPEnabled = false
@@ -10732,7 +10634,7 @@ local function UpdateBerryESP()
     end
 end
 
-v13:AddToggle("Toggle_ESPPlayer", {
+v13:AddToggle("Toggle_181", {
     Title = "ESP Player",
     Default = GetSetting("ESP_Player_Save", false),
     Callback = function(Value)
@@ -10742,7 +10644,7 @@ v13:AddToggle("Toggle_ESPPlayer", {
     end
 })
 
-v13:AddToggle("Toggle_ESPIsland", {
+v13:AddToggle("Toggle_182", {
     Title = "ESP Island",
     Default = GetSetting("ESP_Island_Save", false),
     Callback = function(Value)
@@ -10752,7 +10654,7 @@ v13:AddToggle("Toggle_ESPIsland", {
     end
 })
 
-v13:AddToggle("Toggle_ESPFruit", {
+v13:AddToggle("Toggle_183", {
     Title = "ESP Fruit",
     Default = GetSetting("ESP_Fruit_Save", false),
     Callback = function(Value)
@@ -10762,7 +10664,7 @@ v13:AddToggle("Toggle_ESPFruit", {
     end
 })
 
-v13:AddToggle("Toggle_ESPFlower", {
+v13:AddToggle("Toggle_184", {
     Title = "ESP Flower",
     Default = GetSetting("ESP_Flower_Save", false),
     Callback = function(Value)
@@ -10772,7 +10674,7 @@ v13:AddToggle("Toggle_ESPFlower", {
     end
 })
 
-v13:AddToggle("Toggle_ESPChest", {
+v13:AddToggle("Toggle_185", {
     Title = "ESP Chest",
     Default = GetSetting("ESP_Chest_Save", false),
     Callback = function(Value)
@@ -10782,7 +10684,7 @@ v13:AddToggle("Toggle_ESPChest", {
     end
 })
 
-v13:AddToggle("Toggle_ESPGearMirage", {
+v13:AddToggle("Toggle_186", {
     Title = "ESP Gear (Mirage)",
     Default = GetSetting("ESP_Gear_Save", false),
     Callback = function(Value)
@@ -10792,7 +10694,7 @@ v13:AddToggle("Toggle_ESPGearMirage", {
     end
 })
 
-v13:AddToggle("Toggle_ESPAdvancedDealer", {
+v13:AddToggle("Toggle_187", {
     Title = "ESP Advanced Dealer",
     Default = GetSetting("ESP_AdvDealer_Save", false),
     Callback = function(Value)
@@ -10802,7 +10704,7 @@ v13:AddToggle("Toggle_ESPAdvancedDealer", {
     end
 })
 
-v13:AddToggle("Toggle_ESPHakiColor", {
+v13:AddToggle("Toggle_188", {
     Title = "ESP Haki Color",
     Default = GetSetting("ESP_HakiColor_Save", false),
     Callback = function(Value)
@@ -10812,7 +10714,7 @@ v13:AddToggle("Toggle_ESPHakiColor", {
     end
 })
 
-v13:AddToggle("Toggle_ESPBerry", {
+v13:AddToggle("Toggle_189", {
     Title = "ESP Berry",
     Default = GetSetting("ESP_Berry_Save", false),
     Callback = function(Value)
@@ -10961,7 +10863,7 @@ local World1 = World1 or false
 local World2 = World2 or false
 local World3 = World3 or false
 
-v14:AddSection("Purchase Melee V1")
+v14:AddParagraph({Title = "â”€â”€ Purchase Melee V1 â”€â”€", Content = ""})
 
 local MeleeCoords = {
     ["Dark Step"] = {
@@ -11051,7 +10953,7 @@ local function GetAvailableMeleeOptions()
     return list
 end
 
-v14:AddDropdown("Dropdown_ChooseMeleetoBuy", {
+v14:AddDropdown("Dropdown_18", {
     Title = "Choose Melee to Buy",
     Values = GetAvailableMeleeOptions(),
     Default = "Dark Step (Choose Melee)",
@@ -11060,7 +10962,7 @@ v14:AddDropdown("Dropdown_ChooseMeleetoBuy", {
     end
 })
 
-v14:AddToggle("Toggle_AutoBuy", {
+v14:AddToggle("Toggle_190", {
     Title = "Auto Buy",
     Default = GetSetting("AutoBuyMelee_Save", false),
     Callback = function(Value)
@@ -11141,13 +11043,13 @@ v14:AddToggle("Toggle_AutoBuy", {
     end
 })
 
-v14:AddSection("Purchase Craft Sea Event Items")
+v14:AddParagraph({Title = "â”€â”€ Purchase Craft Sea Event Items â”€â”€", Content = ""})
 
 v14:AddButton({
     Title = "Craft Dragonheart",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "Dragonheart")
-        Fluent:Notify({Title = "Craft", Message = "Crafted Dragonheart", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted Dragonheart", Duration = 2})
     end
 })
 
@@ -11155,7 +11057,7 @@ v14:AddButton({
     Title = "Craft Dragonstorm",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "Dragonstorm")
-        Fluent:Notify({Title = "Craft", Message = "Crafted Dragonstorm", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted Dragonstorm", Duration = 2})
     end
 })
 
@@ -11163,7 +11065,7 @@ v14:AddButton({
     Title = "Craft DinoHood",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "DinoHood")
-        Fluent:Notify({Title = "Craft", Message = "Crafted DinoHood", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted DinoHood", Duration = 2})
     end
 })
 
@@ -11171,7 +11073,7 @@ v14:AddButton({
     Title = "Craft SharkTooth",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "SharkTooth")
-        Fluent:Notify({Title = "Craft", Message = "Crafted SharkTooth", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted SharkTooth", Duration = 2})
     end
 })
 
@@ -11179,7 +11081,7 @@ v14:AddButton({
     Title = "Craft TerrorJaw",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "TerrorJaw")
-        Fluent:Notify({Title = "Craft", Message = "Crafted TerrorJaw", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted TerrorJaw", Duration = 2})
     end
 })
 
@@ -11187,7 +11089,7 @@ v14:AddButton({
     Title = "Craft SharkAnchor",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "SharkAnchor")
-        Fluent:Notify({Title = "Craft", Message = "Crafted SharkAnchor", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted SharkAnchor", Duration = 2})
     end
 })
 
@@ -11195,7 +11097,7 @@ v14:AddButton({
     Title = "Craft LeviathanCrown",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "LeviathanCrown")
-        Fluent:Notify({Title = "Craft", Message = "Crafted LeviathanCrown", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted LeviathanCrown", Duration = 2})
     end
 })
 
@@ -11203,7 +11105,7 @@ v14:AddButton({
     Title = "Craft LeviathanShield",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "LeviathanShield")
-        Fluent:Notify({Title = "Craft", Message = "Crafted LeviathanShield", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted LeviathanShield", Duration = 2})
     end
 })
 
@@ -11211,7 +11113,7 @@ v14:AddButton({
     Title = "Craft LeviathanBoat",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "LeviathanBoat")
-        Fluent:Notify({Title = "Craft", Message = "Crafted LeviathanBoat", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted LeviathanBoat", Duration = 2})
     end
 })
 
@@ -11219,7 +11121,7 @@ v14:AddButton({
     Title = "Craft LegendaryScroll",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "LegendaryScroll")
-        Fluent:Notify({Title = "Craft", Message = "Crafted LegendaryScroll", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted LegendaryScroll", Duration = 2})
     end
 })
 
@@ -11227,17 +11129,17 @@ v14:AddButton({
     Title = "Craft MythicalScroll",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "MythicalScroll")
-        Fluent:Notify({Title = "Craft", Message = "Crafted MythicalScroll", Duration = 2})
+        Fluent:Notify({Title = "Craft", Content = "Crafted MythicalScroll", Duration = 2})
     end
 })
 
-v14:AddSection("Purchase Haki, Soru, Geppo")
+v14:AddParagraph({Title = "â”€â”€ Purchase Haki, Soru, Geppo â”€â”€", Content = ""})
 
 v14:AddButton({
     Title = "Buy Geppo $10,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Geppo")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Geppo", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Geppo", Duration = 2})
     end
 })
 
@@ -11245,7 +11147,7 @@ v14:AddButton({
     Title = "Buy Buso Haki $25,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Buso")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Buso Haki", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Buso Haki", Duration = 2})
     end
 })
 
@@ -11253,7 +11155,7 @@ v14:AddButton({
     Title = "Buy Soru $25,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyHaki", "Soru")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Soru", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Soru", Duration = 2})
     end
 })
 
@@ -11261,17 +11163,17 @@ v14:AddButton({
     Title = "Buy Observation Haki $750,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("KenTalk", "Buy")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Observation Haki", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Observation Haki", Duration = 2})
     end
 })
 
-v14:AddSection("Purchase Sword and Gun")
+v14:AddParagraph({Title = "â”€â”€ Purchase Sword and Gun â”€â”€", Content = ""})
 
 v14:AddButton({
     Title = "Buy Cutlass $1,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Cutlass")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Cutlass", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Cutlass", Duration = 2})
     end
 })
 
@@ -11279,7 +11181,7 @@ v14:AddButton({
     Title = "Buy Katana $1,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Katana")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Katana", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Katana", Duration = 2})
     end
 })
 
@@ -11287,7 +11189,7 @@ v14:AddButton({
     Title = "Buy Iron Mace $25,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Iron Mace")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Iron Mace", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Iron Mace", Duration = 2})
     end
 })
 
@@ -11295,7 +11197,7 @@ v14:AddButton({
     Title = "Buy Dual Katana $12,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Duel Katana")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Dual Katana", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Dual Katana", Duration = 2})
     end
 })
 
@@ -11303,7 +11205,7 @@ v14:AddButton({
     Title = "Buy Triple Katana $60,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Triple Katana")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Triple Katana", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Triple Katana", Duration = 2})
     end
 })
 
@@ -11311,7 +11213,7 @@ v14:AddButton({
     Title = "Buy Pipe $100,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Pipe")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Pipe", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Pipe", Duration = 2})
     end
 })
 
@@ -11319,7 +11221,7 @@ v14:AddButton({
     Title = "Buy Dual-Headed Blade $400,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Dual-Headed Blade")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Dual-Headed Blade", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Dual-Headed Blade", Duration = 2})
     end
 })
 
@@ -11327,7 +11229,7 @@ v14:AddButton({
     Title = "Buy Bisento $1,200,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Bisento")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Bisento", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Bisento", Duration = 2})
     end
 })
 
@@ -11335,7 +11237,7 @@ v14:AddButton({
     Title = "Buy Soul Cane $750,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Soul Cane")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Soul Cane", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Soul Cane", Duration = 2})
     end
 })
 
@@ -11343,7 +11245,7 @@ v14:AddButton({
     Title = "Buy Pole V2 5,000F",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ThunderGodTalk")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Pole V2", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Pole V2", Duration = 2})
     end
 })
 
@@ -11351,7 +11253,7 @@ v14:AddButton({
     Title = "Buy Slingshot $5,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Slingshot")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Slingshot", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Slingshot", Duration = 2})
     end
 })
 
@@ -11359,7 +11261,7 @@ v14:AddButton({
     Title = "Buy Musket $8,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Musket")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Musket", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Musket", Duration = 2})
     end
 })
 
@@ -11367,7 +11269,7 @@ v14:AddButton({
     Title = "Buy Flintlock $10,500",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Flintlock")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Flintlock", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Flintlock", Duration = 2})
     end
 })
 
@@ -11375,7 +11277,7 @@ v14:AddButton({
     Title = "Buy Refined Slingshot $30,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Refined Flintlock")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Refined Slingshot", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Refined Slingshot", Duration = 2})
     end
 })
 
@@ -11383,7 +11285,7 @@ v14:AddButton({
     Title = "Buy Refined Flintlock $65,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Refined Flintlock")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Refined Flintlock", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Refined Flintlock", Duration = 2})
     end
 })
 
@@ -11391,7 +11293,7 @@ v14:AddButton({
     Title = "Buy Cannon $100,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Cannon")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Cannon", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Cannon", Duration = 2})
     end
 })
 
@@ -11400,7 +11302,7 @@ v14:AddButton({
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Slingshot", "1")
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Slingshot", "2")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Kabucha", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Kabucha", Duration = 2})
     end
 })
 
@@ -11408,17 +11310,17 @@ v14:AddButton({
     Title = "Buy Bizarre Rifle 250 Ectoplasm",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Ectoplasm", "Buy", 1)
-        Fluent:Notify({Title = "Shop", Message = "Purchased Bizarre Rifle", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Bizarre Rifle", Duration = 2})
     end
 })
 
-v14:AddSection("Buy Accessories")
+v14:AddParagraph({Title = "â”€â”€ Buy Accessories â”€â”€", Content = ""})
 
 v14:AddButton({
     Title = "Buy Black Cape $50,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Black Cape")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Black Cape", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Black Cape", Duration = 2})
     end
 })
 
@@ -11426,7 +11328,7 @@ v14:AddButton({
     Title = "Buy Swordsman Hat $150,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Swordsman Hat")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Swordsman Hat", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Swordsman Hat", Duration = 2})
     end
 })
 
@@ -11434,17 +11336,17 @@ v14:AddButton({
     Title = "Buy Tomoe Ring $500,000",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyItem", "Tomoe Ring")
-        Fluent:Notify({Title = "Shop", Message = "Purchased Tomoe Ring", Duration = 2})
+        Fluent:Notify({Title = "Shop", Content = "Purchased Tomoe Ring", Duration = 2})
     end
 })
 
-v14:AddSection("Clan, Reset Stats")
+v14:AddParagraph({Title = "â”€â”€ Clan, Reset Stats â”€â”€", Content = ""})
 
 v14:AddButton({
     Title = "Clan Ghoul",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Ectoplasm", "Change", 4)
-        Fluent:Notify({Title = "Race", Message = "Purchased sang Ghoul", Duration = 2})
+        Fluent:Notify({Title = "Race", Content = "Purchased sang Ghoul", Duration = 2})
     end
 })
 
@@ -11452,7 +11354,7 @@ v14:AddButton({
     Title = "Clan Cyborg",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CyborgTrainer", "Buy")
-        Fluent:Notify({Title = "Race", Message = "Purchased sang Cyborg", Duration = 2})
+        Fluent:Notify({Title = "Race", Content = "Purchased sang Cyborg", Duration = 2})
     end
 })
 
@@ -11461,7 +11363,7 @@ v14:AddButton({
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "1")
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "2")
-        Fluent:Notify({Title = "Stats", Message = "Purchased Stats", Duration = 2})
+        Fluent:Notify({Title = "Stats", Content = "Purchased Stats", Duration = 2})
     end
 })
 
@@ -11470,23 +11372,11 @@ v14:AddButton({
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "1")
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "2")
-        Fluent:Notify({Title = "Race", Message = "Purchased Random Race", Duration = 2})
+        Fluent:Notify({Title = "Race", Content = "Purchased Random Race", Duration = 2})
     end
 })
 
-v15:AddSection("UI Themes")
-
-v15:AddDropdown("UI_Theme_Selector", {
-    Title = "Select Theme Preset",
-    Values = Fluent.Themes,
-    Default = "Emerald",
-    Multi = false,
-    Callback = function(Value)
-        Fluent:SetTheme(Value)
-    end
-})
-
-v15:AddSection("Server Functions")
+v15:AddParagraph({Title = "â”€â”€ Server Functions â”€â”€", Content = ""})
 
 v15:AddButton({
     Title = "Redeem All Codes",
@@ -11507,7 +11397,7 @@ v15:AddButton({
         }
         local RedeemRemote = replicated.Remotes:FindFirstChild("Redeem")
         if not RedeemRemote then
-            Fluent:Notify({Title = "Error", Message = "Không tìm thấy remote Redeem", Duration = 3})
+            Fluent:Notify({Title = "Error", Content = "Không tìm thấy remote Redeem", Duration = 3})
             return
         end
         for _, code in ipairs(Codes) do
@@ -11520,11 +11410,11 @@ v15:AddButton({
                 end
             end)
         end
-        Fluent:Notify({Title = "Success", Message = "Đã thử nhập tất cả mã", Duration = 3})
+        Fluent:Notify({Title = "Success", Content = "Đã thử nhập tất cả mã", Duration = 3})
     end
 })
 
-v15:AddSection("Player GUI / Others")
+v15:AddParagraph({Title = "â”€â”€ Player GUI / Others â”€â”€", Content = ""})
 
 v15:AddButton({
     Title = "Open Awakenings Expert",
@@ -11545,7 +11435,7 @@ v15:AddButton({
     end
 })
 
-v15:AddToggle("Toggle_DisableChatGUI", {
+v15:AddToggle("Toggle_191", {
     Title = "Disable Chat GUI",
     Default = GetSetting("DisableChat_Save", false),
     Callback = function(Value)
@@ -11558,7 +11448,7 @@ v15:AddToggle("Toggle_DisableChatGUI", {
     end
 })
 
-v15:AddToggle("Toggle_DisableLeaderboardGUI", {
+v15:AddToggle("Toggle_192", {
     Title = "Disable Leaderboard GUI",
     Default = GetSetting("DisableLeader_Save", false),
     Callback = function(Value)
@@ -11571,7 +11461,7 @@ v15:AddToggle("Toggle_DisableLeaderboardGUI", {
     end
 })
 
-v15:AddToggle("Toggle_UnlockAllPortalsWIP", {
+v15:AddToggle("Toggle_193", {
     Title = "Unlock All Portals (WIP)",
     Default = GetSetting("PortalUnLock_Save", false),
     Callback = function(Value)
@@ -11594,10 +11484,10 @@ task.spawn(function()
     end
 end)
 
-v15:AddSection("Graphics / Haki Stats")
+v15:AddParagraph({Title = "â”€â”€ Graphics / Haki Stats â”€â”€", Content = ""})
 
 local HakiStages = {"Stage 0", "Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5"}
-v15:AddDropdown("Dropdown_SelectHakiStage", {
+v15:AddDropdown("Dropdown_19", {
     Title = "Select Haki Stage",
     Values = HakiStages,
     Default = "Stage 0",
@@ -11614,9 +11504,9 @@ v15:AddButton({
     end
 })
 
-v15:AddSection("Misc Graphics")
+v15:AddParagraph({Title = "â”€â”€ Misc Graphics â”€â”€", Content = ""})
 
-v15:AddToggle("Toggle_RTXModeVisual", {
+v15:AddToggle("Toggle_194", {
     Title = "RTX Mode (Visual)",
     Default = GetSetting("RTXMode_Save", false),
     Callback = function(Value)
@@ -11652,7 +11542,7 @@ v15:AddButton({
                 end
             end)
         end
-        Fluent:Notify({Title = "Graphics", Message = "Đã chuyển sang chế độ Fast Mode", Duration = 2})
+        Fluent:Notify({Title = "Graphics", Content = "Đã chuyển sang chế độ Fast Mode", Duration = 2})
     end
 })
 
@@ -11660,7 +11550,7 @@ v15:AddButton({
     Title = "Low CPU Mode",
     Callback = function()
         LowCpu()
-        Fluent:Notify({Title = "Optimization", Message = "Đã bật chế độ Low CPU", Duration = 2})
+        Fluent:Notify({Title = "Optimization", Content = "Đã bật chế độ Low CPU", Duration = 2})
     end
 })
 
@@ -11676,7 +11566,7 @@ v15:AddButton({
                 end
             end
         end)
-        Fluent:Notify({Title = "Boats", Message = "Đã tăng tốc độ thuyền (phía client)", Duration = 2})
+        Fluent:Notify({Title = "Boats", Content = "Đã tăng tốc độ thuyền (phía client)", Duration = 2})
     end
 })
 
@@ -11688,11 +11578,11 @@ v15:AddButton({
             if Lighting:FindFirstChild("SeaTerrorCC") then Lighting.SeaTerrorCC:Destroy() end
             if Lighting:FindFirstChild("FantasySky") then Lighting.FantasySky:Destroy() end
         end)
-        Fluent:Notify({Title = "Fog", Message = "Đã xóa sương mù", Duration = 2})
+        Fluent:Notify({Title = "Fog", Content = "Đã xóa sương mù", Duration = 2})
     end
 })
 
-v15:AddSection("Configure - God")
+v15:AddParagraph({Title = "â”€â”€ Configure - God â”€â”€", Content = ""})
 
 v15:AddButton({
     Title = "Rain Fruits (Client)",
@@ -11707,7 +11597,7 @@ v15:AddButton({
     end
 })
 
-v15:AddToggle("Toggle_FullBright", {
+v15:AddToggle("Toggle_195", {
     Title = "Full Bright",
     Default = GetSetting("FullBright_Save", false),
     Callback = function(Value)
@@ -11727,7 +11617,7 @@ v15:AddToggle("Toggle_FullBright", {
 })
 
 local TimeOptions = {"Day", "Night"}
-v15:AddDropdown("Dropdown_SelectTime", {
+v15:AddDropdown("Dropdown_20", {
     Title = "Select Time",
     Values = TimeOptions,
     Default = "Day",
@@ -11735,7 +11625,7 @@ v15:AddDropdown("Dropdown_SelectTime", {
         _G.SelectDN = Value
     end
 })
-v15:AddToggle("Toggle_AutoSetTime", {
+v15:AddToggle("Toggle_196", {
     Title = "Auto Set Time",
     Default = GetSetting("AutoTime_Save", false),
     Callback = function(Value)
@@ -11752,7 +11642,7 @@ task.spawn(function()
     end
 end)
 
-v15:AddToggle("Toggle_IceWalkVisual", {
+v15:AddToggle("Toggle_197", {
     Title = "Ice Walk (Visual)",
     Default = GetSetting("IceWalk_Save", false),
     Callback = function(Value)
@@ -11778,7 +11668,7 @@ task.spawn(function()
     end
 end)
 
-v12:AddSection("Pvp, Aimbot, Movement")
+v12:AddParagraph({Title = "â”€â”€ Pvp, Aimbot, Movement â”€â”€", Content = ""})
 
 local playerList = {}
 
@@ -11792,7 +11682,7 @@ local function updatePlayerList()
     return newList
 end
 
-local PlayerDropdown = v12:AddDropdown("Dropdown_SelectPlayers", {
+local PlayerDropdown = v12:AddDropdown("Dropdown_21", {
     Title = "Select Players",
     Values = updatePlayerList(),
     Default = nil,
@@ -11812,7 +11702,7 @@ v12:AddButton({
     end
 })
 
-v12:AddToggle("Toggle_TeleporttoPlayer", {
+v12:AddToggle("Toggle_198", {
     Title = "Teleport to Player",
     Default = GetSetting("TpPly_Save", false),
     Callback = function(value)
@@ -11834,7 +11724,7 @@ v12:AddToggle("Toggle_TeleporttoPlayer", {
     end
 })
 
-v12:AddToggle("Toggle_SpectateChoosePlayers", {
+v12:AddToggle("Toggle_199", {
     Title = "Spectate Choose Players",
     Default = GetSetting("SpectatePlys_Save", false),
     Callback = function(value)
@@ -11855,9 +11745,9 @@ v12:AddToggle("Toggle_SpectateChoosePlayers", {
     end
 })
 
-v12:AddSection("Aimbot")
+v12:AddParagraph({Title = "â”€â”€ Aimbot â”€â”€", Content = ""})
 
-v12:AddToggle("Toggle_AimbotCamLock", {
+v12:AddToggle("Toggle_200", {
     Title = "Aimbot Cam Lock",
     Default = GetSetting("AimCam_Save", false),
     Callback = function(value)
@@ -11891,7 +11781,7 @@ v12:AddToggle("Toggle_AimbotCamLock", {
     end
 })
 
-v12:AddToggle("Toggle_AimbotSkills", {
+v12:AddToggle("Toggle_201", {
     Title = "Aimbot Skills",
     Default = GetSetting("SilentAim_Save", false),
     Callback = function(value)
@@ -11901,7 +11791,7 @@ v12:AddToggle("Toggle_AimbotSkills", {
     end
 })
 
-v12:AddSection("Speed/Jump")
+v12:AddParagraph({Title = "â”€â”€ Speed/Jump â”€â”€", Content = ""})
 
 _G.WalkSpeedEnabled = _G.WalkSpeedEnabled or false
 _G.JumpEnabled = _G.JumpEnabled or false
@@ -11950,7 +11840,7 @@ end
 
 game:GetService("RunService").Heartbeat:Connect(applyStats)
 
-v12:AddToggle("Toggle_SetWalkSpeed", {
+v12:AddToggle("Toggle_202", {
     Title = "Set WalkSpeed",
     Default = GetSetting("SpeedToggle_Save", _G.WalkSpeedEnabled),
     Callback = function(value)
@@ -11961,7 +11851,7 @@ v12:AddToggle("Toggle_SetWalkSpeed", {
     end
 })
 
-v12:AddInput("Input_WalkSpeedValue", {
+v12:AddInput("Input_8", {Finished = true, 
     Title = "WalkSpeed Value",
     Placeholder = "30",
     Default = tostring((getgenv()).WalkSpeedValue),
@@ -11976,7 +11866,7 @@ v12:AddInput("Input_WalkSpeedValue", {
     end
 })
 
-v12:AddToggle("Toggle_SetJumpPower", {
+v12:AddToggle("Toggle_203", {
     Title = "Set JumpPower",
     Default = GetSetting("JumpToggle_Save", _G.JumpEnabled),
     Callback = function(value)
@@ -11987,7 +11877,7 @@ v12:AddToggle("Toggle_SetJumpPower", {
     end
 })
 
-v12:AddInput("Input_JumpPowerValue", {
+v12:AddInput("Input_9", {Finished = true, 
     Title = "JumpPower Value",
     Placeholder = "50",
     Default = tostring((getgenv()).JumpValue),
@@ -12002,9 +11892,9 @@ v12:AddInput("Input_JumpPowerValue", {
     end
 })
 
-v12:AddSection("LocalPlayer Settings / Misc")
+v12:AddParagraph({Title = "â”€â”€ LocalPlayer Settings / Misc â”€â”€", Content = ""})
 
-v12:AddToggle("Toggle_InstanceMinkV3INF", {
+v12:AddToggle("Toggle_204", {
     Title = "Instance Mink V3 [ INF ]",
     Default = GetSetting("InfAblities_Save", false),
     Callback = function(value)
@@ -12037,7 +11927,7 @@ v12:AddToggle("Toggle_InstanceMinkV3INF", {
     end
 })
 
-v12:AddToggle("Toggle_InstanceEnergyINF", {
+v12:AddToggle("Toggle_205", {
     Title = "Instance Energy [ INF ]",
     Default = GetSetting("infEnergy_Save", false),
     Callback = function(value)
@@ -12048,7 +11938,7 @@ v12:AddToggle("Toggle_InstanceEnergyINF", {
     end
 })
 
-v12:AddToggle("Toggle_InstanceSoruINF", {
+v12:AddToggle("Toggle_206", {
     Title = "Instance Soru [ INF ]",
     Default = GetSetting("InfSoru_Save", false),
     Callback = function(value)
@@ -12059,7 +11949,7 @@ v12:AddToggle("Toggle_InstanceSoruINF", {
     end
 })
 
-v12:AddToggle("Toggle_InstanceObservationRangeINF", {
+v12:AddToggle("Toggle_207", {
     Title = "Instance Observation Range [ INF ]",
     Default = GetSetting("InfiniteObRange_Save", false),
     Callback = function(value)
@@ -12070,9 +11960,9 @@ v12:AddToggle("Toggle_InstanceObservationRangeINF", {
     end
 })
 
-v12:AddSection("Settings Combat / Aimbot Settings")
+v12:AddParagraph({Title = "â”€â”€ Settings Combat / Aimbot Settings â”€â”€", Content = ""})
 
-v12:AddToggle("Toggle_IgnoreSameTeams", {
+v12:AddToggle("Toggle_208", {
     Title = "Ignore Same Teams",
     Default = GetSetting("NoAimTeam_Save", false),
     Callback = function(value)
@@ -12082,7 +11972,7 @@ v12:AddToggle("Toggle_IgnoreSameTeams", {
     end
 })
 
-v12:AddToggle("Toggle_AcceptAllies", {
+v12:AddToggle("Toggle_209", {
     Title = "Accept Allies",
     Default = GetSetting("AcceptAlly_Save", false),
     Callback = function(value)
@@ -12106,11 +11996,11 @@ v12:AddToggle("Toggle_AcceptAllies", {
     end
 })
 
-v12:AddSection("Select Team")
+v12:AddParagraph({Title = "â”€â”€ Select Team â”€â”€", Content = ""})
 
 local selectedTeam = "Pirates"
 
-v12:AddDropdown("Dropdown_SelectTeam", {
+v12:AddDropdown("Dropdown_22", {
     Title = "Select Team",
     Values = {"Pirates", "Marines"},
     Default = "Pirates",
