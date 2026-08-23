@@ -1071,7 +1071,7 @@ Hop = function()
 	end;
 local currentTween = nil
 local currentTargetPos = nil
-getgenv().TweenSpeed = 350
+getgenv().TweenSpeed = 300
 getgenv().OnFarm = false
 shouldTween = false
 
@@ -1194,7 +1194,7 @@ _tp = function(targetCFrame)
         char.Humanoid.Sit = false
     end
 
-    local speed = 350
+    local speed = 300
     local tweenTime = dist / speed
     local info = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear)
 
@@ -3352,26 +3352,17 @@ end
 spawn(function()
     local VaseIndex = 1
 
-    while task.wait() do
-
+    while task.wait(0.2) do
         if _G.AutoTyrant and _G.StartFarm then
             pcall(function()
                 local plr = game.Players.LocalPlayer
                 local boss = workspace.Enemies:FindFirstChild("Tyrant of the Skies")
                 local eyes = GetEyesCount()
 
-                if boss and boss.Humanoid.Health > 0 then
+                if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 and boss:FindFirstChild("HumanoidRootPart") then
                     _tp(boss.HumanoidRootPart.CFrame * CFrame.new(0, FarmHeight, 0))
-                    repeat task.wait()
-                        if boss and boss:FindFirstChild("HumanoidRootPart") then
-                            _tp(boss.HumanoidRootPart.CFrame * CFrame.new(0, FarmHeight, 0))
-                            EquipWeapon(_G.SelectWeapon)
-                            G.Kill(boss, true)
-                        else
-                            break
-                        end
-                    until not boss.Parent or boss.Humanoid.Health <= 0 or not _G.StartFarm or not _G.AutoTyrant
-
+                    EquipWeapon(_G.SelectWeapon)
+                    G.Kill(boss, true)
                 elseif eyes == 4 then
                     local targetsty = {
                         CFrame.new(-16335.1, 158.1, 1465.6), CFrame.new(-16288.6, 158.1, 1470.3),
@@ -3387,68 +3378,13 @@ spawn(function()
 
                         local char = plr.Character
                         if char and char:FindFirstChild("HumanoidRootPart") then
-
                             if (char.HumanoidRootPart.Position - pos.Position).Magnitude < 15 then
-                                char.HumanoidRootPart.Anchored = true
                                 UseAllCategorySkills()
-                                task.wait(0.1)
-                                char.HumanoidRootPart.Anchored = false
-
+                                task.wait(0.2)
                                 VaseIndex = VaseIndex + 1
                                 if VaseIndex > #targetsty then
                                     VaseIndex = 1
                                 end
-                            end
-                        end
-                    end
-
-                else
-                    local TargetData = GetTargetByLevel()
-                    local QuestUI = plr.PlayerGui.Main.Quest
-                    local hasQuest = QuestUI.Visible
-
-                    if _G.AcceptQuest and not hasQuest then
-                        local char = plr.Character
-                        if char and char:FindFirstChild("HumanoidRootPart") then
-                            local distToNPC = (char.HumanoidRootPart.Position - TargetData.QuestPos.Position).Magnitude
-
-                            if distToNPC <= 3 then
-                                char.HumanoidRootPart.CFrame = TargetData.QuestPos
-                                task.wait(0.1)
-                                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(TargetData.QuestArgs))
-                                task.wait(0.5)
-                            else
-                                _tp(TargetData.QuestPos)
-                            end
-                        end
-
-                    else
-                        local char = plr.Character or plr.CharacterAdded:Wait()
-                        local hrp = char:WaitForChild("HumanoidRootPart", 1)
-
-                        if hrp then
-                            local closestEnemy = nil
-                            local shortestDistance = math.huge
-
-                            local AllMobs = {"Skull Slayer", "Serpent Hunter", "Isle Champion", "Sun-kissed Warrior", "Island Boy", "Isle Outlaw"}
-
-                            for _, v in pairs(workspace.Enemies:GetChildren()) do
-                                if table.find(AllMobs, v.Name) and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                                    local distance = (hrp.Position - v.HumanoidRootPart.Position).Magnitude
-                                    if distance < shortestDistance then
-                                        shortestDistance = distance
-                                        closestEnemy = v
-                                    end
-                                end
-                            end
-
-                            if closestEnemy then
-                                local enemyPos = closestEnemy.HumanoidRootPart.CFrame
-                                _tp(enemyPos * CFrame.new(0, FarmHeight, 0))
-                                EquipWeapon(_G.SelectWeapon)
-                                G.Kill(closestEnemy, true)
-                            else
-                                _tp(TargetData.FarmPos)
                             end
                         end
                     end
