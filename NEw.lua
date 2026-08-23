@@ -2601,83 +2601,76 @@ task.spawn(function()
 end)
 
 local v0 = Window:AddTab({
-    Title = "Home",
-    Icon = "rbxassetid://109959345069668"
+    Title = "Info", Icon = "info"
 })
 local v1 = Window:AddTab({
-    Title = "Status",
-    Icon = "activity"
+    Title = "Player", Icon = "user"
 })
 local v2 = Window:AddTab({
-    Title = "Farming",
-    Icon = "landmark"
+    Title = "Auto Farm", Icon = "zap"
 })
 local v3 = Window:AddTab({
-    Title = "Quests/Other",
-    Icon = "list"
+    Title = "Quests", Icon = "scroll-text"
 })
 local v4 = Window:AddTab({
-    Title = "Farm settings",
-    Icon = "settings"
+    Title = "Farm Config", Icon = "sliders-horizontal"
 })
 local v5 = Window:AddTab({
-    Title = "Auto Fishing",
-    Icon = "anchor"
+    Title = "Fishing", Icon = "anchor"
 })
 local v6 = Window:AddTab({
-    Title = "Sea Event",
-    Icon = "globe"
+    Title = "Sea", Icon = "waves"
 })
 local v7 = Window:AddTab({
-    Title = "Volcano",
-    Icon = "flame"
+    Title = "Prehistoric", Icon = "flame"
 })
 local v8 = Window:AddTab({
-    Title = "Race",
-    Icon = "map"
+    Title = "Race", Icon = "trophy"
 })
 local v9 = Window:AddTab({
-    Title = "Fruits",
-    Icon = "package"
+    Title = "Fruits", Icon = "star"
 })
 local v10 = Window:AddTab({
-    Title = "Raid",
-    Icon = "shield"
+    Title = "Raid", Icon = "shield"
 })
 local v11 = Window:AddTab({
-    Title = "Teleport",
-    Icon = "rbxassetid://91306356501736"
+    Title = "Travel", Icon = "map-pin"
 })
 local v12 = Window:AddTab({
-    Title = "PvP",
-    Icon = "sword"
+    Title = "PvP", Icon = "sword"
 })
 local v13 = Window:AddTab({
-    Title = "Esp",
-    Icon = "eye"
+    Title = "Misc", Icon = "eye"
 })
 
 local v14 = Window:AddTab({
-    Title = "Shop",
-    Icon = "rbxassetid://71885477293226"
+    Title = "Shop", Icon = "shopping-cart"
 })
 local v15 = Window:AddTab({
-    Title = "Settings",
-    Icon = "settings"
+    Title = "Settings", Icon = "settings-2"
 })
 
-v0:AddParagraph({
-    Title = "Quantum HUB",
-    Content = "Script by Quantum Team"
-})
+-- ===================================
+-- INFO TAB - Quantum HUB
+-- ===================================
+
+v0:AddParagraph({Title = "[ Quantum HUB ]", Content = ""})
 
 v0:AddParagraph({
-    Title = "Discord",
-    Content = "Join Server Discord"
+    Title = "Script Info",
+    Content = "Quantum HUB v1.0.0.1 | Blox Fruits\nDeveloped by Quantum Team\nLast Updated: June 2026"
+})
+
+v0:AddParagraph({Title = "[ Community ]", Content = ""})
+
+v0:AddParagraph({
+    Title = "Discord Server",
+    Content = "Join our Discord to get updates,\nreport bugs, and chat with the community!"
 })
 
 v0:AddButton({
-    Title = "Copy Link Discord",
+    Title = "Copy Discord Link",
+    Description = "Click to copy invite link to clipboard",
     Callback = function()
         local link = "https://discord.gg/jdmX43t5mY"
         if setclipboard then
@@ -2686,9 +2679,18 @@ v0:AddButton({
     end
 })
 
+v0:AddParagraph({Title = "[ Notes ]", Content = ""})
+
 v0:AddParagraph({
-    Title = "Quantum HUB",
-    Content = "•Quantum HUB\n• Script oleh Quantum Team\n• Tanggal Pembuatan: 13 Maret 2026\n• Tanggal terakhir diperbarui: 1 Juni 2026\n• Senjata Aura saat ini tidak dapat menembak perahu dan leviathan"
+    Title = "Important Notes",
+    Content = "- Gun Aura cannot target boats/leviathan\n- Disable toggles before switching sea\n- Use Farm Config tab to setup attacks first"
+})
+
+v0:AddParagraph({Title = "[ Quick Guide ]", Content = ""})
+
+v0:AddParagraph({
+    Title = "How to use",
+    Content = "1. Go to Farm Config tab - setup attack mode\n2. Go to Auto Farm tab - enable farming\n3. Go to Quests tab - for quests & items\n4. Use Travel tab to change worlds/islands"
 })
 
 local Time = v1:AddParagraph({
@@ -3148,7 +3150,7 @@ task.spawn(function()
     end
 end)
 
-v2:AddParagraph({Title = "â”€â”€ Auto Farm main â”€â”€", Content = ""})
+v2:AddParagraph({Title = "[ Auto Farm main ]", Content = ""})
 v2:AddDropdown("Dropdown_3", {
     Title = "Select Weapon",
     Values = {"Melee","Sword","Blox Fruit","Gun"},
@@ -3695,7 +3697,7 @@ spawn(function()
         end
     end
 end)
-v2:AddParagraph({Title = "â”€â”€ Other â”€â”€", Content = ""})
+v2:AddParagraph({Title = "[ Other ]", Content = ""})
 
 _G.MaxFarmDistance = 325
 
@@ -3890,7 +3892,7 @@ spawn(function()
     end
 end)
 end
-v2:AddParagraph({Title = "â”€â”€ Collect â”€â”€", Content = ""})
+v2:AddParagraph({Title = "[ Collect ]", Content = ""})
 
 v2:AddToggle("Toggle_11", {
     Title = "Auto Collect Chest",
@@ -3973,7 +3975,7 @@ spawn(function()
         end
     end
 end)
-v2:AddParagraph({Title = "â”€â”€ Material â”€â”€", Content = ""})
+v2:AddParagraph({Title = "[ Material ]", Content = ""})
 
 v2:AddDropdown("Dropdown_5", {
 	Title = "Select Material",
@@ -4042,7 +4044,7 @@ spawn(function()
 end);
 
 if World3 then
-v2:AddParagraph({Title = "â”€â”€ Bones â”€â”€", Content = ""})
+v2:AddParagraph({Title = "[ Bones ]", Content = ""})
 
 v2:AddToggle("Toggle_14", {
     Title = "Trade Bone",
@@ -4169,7 +4171,7 @@ _G.AutoAcceptQuest = false
 _G.CurrentTargetBoss = nil
 _G.FindBoss = _G.FindBoss or (Boss and Boss[1])
 
-v2:AddParagraph({Title = "â”€â”€ Boss Farm â”€â”€", Content = ""})
+v2:AddParagraph({Title = "[ Boss Farm ]", Content = ""})
 
 local BossStatus = v2:AddParagraph({
     Title = "Boss Spawn Status",
@@ -4394,7 +4396,7 @@ end)
 end
 
 if World3 then
-v2:AddParagraph({Title = "â”€â”€ Farm Mastery â”€â”€", Content = ""})
+v2:AddParagraph({Title = "[ Farm Mastery ]", Content = ""})
 
 local CAKE_MOBS = X or {"Cookie Crafter", "Cake Guard", "Baking Staff", "Head Baker"}
 local BONE_MOBS = P or {"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy"}
@@ -4932,7 +4934,7 @@ end)
 _G.AutoHopServer = _G.AutoHopServer or false
 _G.HopDelay = _G.HopDelay or (30 * 60)
 
-v4:AddParagraph({Title = "â”€â”€ Auto Hop â”€â”€", Content = ""})
+v4:AddParagraph({Title = "[ Auto Hop ]", Content = ""})
 
 v4:AddToggle("Toggle_37", {
     Title = "Auto Hop Server",
@@ -4979,7 +4981,7 @@ task.spawn(function()
     end
 end)
 
-v5:AddParagraph({Title = "â”€â”€ Fishing â”€â”€", Content = ""})
+v5:AddParagraph({Title = "[ Fishing ]", Content = ""})
 
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -5153,7 +5155,7 @@ task.spawn(function()
 end)
 
 if World1 then
-    v3:AddParagraph({Title = "â”€â”€ Travel To Sea 2 â”€â”€", Content = ""})
+    v3:AddParagraph({Title = "[ Travel To Sea 2 ]", Content = ""})
 
     local TravelDresToggle = v3:AddToggle("Toggle_40", {
         Title = "Auto Quest Sea 2",
@@ -5211,7 +5213,7 @@ if World1 then
 end
 
 if World2 then
-    v3:AddParagraph({Title = "â”€â”€ Travel To Sea 3 â”€â”€", Content = ""})
+    v3:AddParagraph({Title = "[ Travel To Sea 3 ]", Content = ""})
 
     local AutoZouToggle = v3:AddToggle("Toggle_41", {
         Title = "Auto Quest Sea 3",
@@ -5415,7 +5417,7 @@ task.spawn(function()
     end
 end)
 
-v3:AddParagraph({Title = "â”€â”€ Quests â”€â”€", Content = ""})
+v3:AddParagraph({Title = "[ Quests ]", Content = ""})
 
 v3:AddToggle("Toggle_46", {
     Title = "Auto Farm Observation",
@@ -5646,7 +5648,7 @@ if World3 then
         end;
     end);
 
-    v3:AddParagraph({Title = "â”€â”€ Cursed Swords â”€â”€", Content = ""});
+    v3:AddParagraph({Title = "[ Cursed Swords ]", Content = ""});
 
     local EliteProgressPara = v3:AddParagraph({ Title = "Elites Process ", Content = "" });
     spawn(function()
@@ -5816,7 +5818,7 @@ if World3 then
 end
 
 if World2 or World3 then
-    v3:AddParagraph({Title = "â”€â”€ Buso/Aura Colours â”€â”€", Content = ""});
+    v3:AddParagraph({Title = "[ Buso / Aura Colours ]", Content = ""});
 
     v3:AddToggle("Toggle_53", {
         Title = "Teleport Barista Haki",
@@ -5882,7 +5884,7 @@ v3:AddToggle("Toggle_55", {
     end,
 })
 
-v3:AddParagraph({Title = "â”€â”€ Item â”€â”€", Content = ""})
+v3:AddParagraph({Title = "[ Item ]", Content = ""})
 if World2 then
 
     v3:AddToggle("Toggle_56", {
@@ -6369,7 +6371,7 @@ if World3 then
 end
 
 if World3 then
-    v3:AddParagraph({Title = "â”€â”€ True Triple Katana â”€â”€", Content = ""})
+    v3:AddParagraph({Title = "[ True Triple Katana ]", Content = ""})
 
     v3:AddButton({
         Title = "Buy Legendary Sword",
@@ -6536,7 +6538,7 @@ if World3 then
     end)
 end
 
-v6:AddParagraph({Title = "â”€â”€ Sea Event / Setting Sail â”€â”€", Content = ""})
+v6:AddParagraph({Title = "[ Sea Event / Setting Sail ]", Content = ""})
 
 local BoatList = {
         "Guardian",
@@ -6749,7 +6751,7 @@ v6:AddToggle("Toggle_79", {
         end
     })
 
-v6:AddParagraph({Title = "â”€â”€ Select what you will farm â”€â”€", Content = ""})
+v6:AddParagraph({Title = "[ Select what you will farm ]", Content = ""})
 
 v6:AddToggle("Toggle_80", {
         Title = "Auto Attack Sea Beast",
@@ -6768,10 +6770,10 @@ v6:AddToggle("Toggle_81", {
 })
 
 if World2 then
-    v6:AddParagraph({Title = "â”€â”€ Go to Sea 3 for more options â”€â”€", Content = ""})
+    v6:AddParagraph({Title = "[ Go to Sea 3 for more options ]", Content = ""})
 end
 if World1 then
-    v6:AddParagraph({Title = "â”€â”€ Go to Sea 3 or Sea 2 for Farm maritime events â”€â”€", Content = ""})
+    v6:AddParagraph({Title = "[ Go to Sea 3 or Sea 2 for maritime ]", Content = ""})
 end
 if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
     v6:AddToggle("Toggle_82", {
@@ -6819,7 +6821,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
 end
 
 if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
-    v6:AddParagraph({Title = "â”€â”€ Frozen Dimension â”€â”€", Content = ""})
+    v6:AddParagraph({Title = "[ Frozen Dimension ]", Content = ""})
 
     v6:AddButton({
         Title = "Buy Spy",
@@ -6859,7 +6861,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         end
     })
 
-    v6:AddParagraph({Title = "â”€â”€ Kitsune Island / Event â”€â”€", Content = ""})
+    v6:AddParagraph({Title = "[ Kitsune Island / Event ]", Content = ""})
 
     v6:AddToggle("Toggle_90", {
         Title = "Auto Find Kitsune Island",
@@ -7002,7 +7004,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
     })
 end
 
-v6:AddParagraph({Title = "â”€â”€ Skill Selection â”€â”€", Content = ""})
+v6:AddParagraph({Title = "[ Skill Selection ]", Content = ""})
 
 _G.SelectedSkills = _G.SelectedSkills or {
     Melee = {Z = false, X = false, C = false},
@@ -7140,7 +7142,7 @@ v6:AddToggle("Toggle_105", {
     end
 })
 
-v7:AddParagraph({Title = "â”€â”€ Prehistoric Island â”€â”€", Content = ""})
+v7:AddParagraph({Title = "[ Prehistoric Island ]", Content = ""})
 
 local PrehistoricStatus = v7:AddParagraph({
     Title = "Prehistoric Island Status",
@@ -7159,7 +7161,7 @@ task.spawn(function()
     end
 end)
 
-v7:AddParagraph({Title = "â”€â”€ Skill Selection (Prehistoric) â”€â”€", Content = ""})
+v7:AddParagraph({Title = "[ Skill Selection ]", Content = ""})
 
 _G.PrehistoricSkills = _G.PrehistoricSkills or {
     Melee = {Z = true, X = true, C = true},
@@ -7320,7 +7322,7 @@ v7:AddToggle("Toggle_117", {
     end
 })
 
-v7:AddParagraph({Title = "â”€â”€ Main Prehistoric Options â”€â”€", Content = ""})
+v7:AddParagraph({Title = "[ Main Prehistoric Options ]", Content = ""})
 
 v7:AddToggle("Toggle_118", {
     Title = "Auto Find Prehistoric Island",
@@ -7616,7 +7618,7 @@ spawn(function()
     end
 end)
 
-v7:AddParagraph({Title = "â”€â”€ Volcanic Crafting â”€â”€", Content = ""})
+v7:AddParagraph({Title = "[ Volcanic Crafting ]", Content = ""})
 
 v7:AddButton({
     Title = "Craft Volcanic Magnet (Manual)",
@@ -7655,7 +7657,7 @@ task.spawn(function()
     end
 end)
 
-v7:AddParagraph({Title = "â”€â”€ Drago Trials â”€â”€", Content = ""})
+v7:AddParagraph({Title = "[ Drago Trials ]", Content = ""})
 
 v7:AddToggle("Toggle_126", {
     Title = "Tween To Upgrade Drago Trial",
@@ -7747,7 +7749,7 @@ v7:AddToggle("Toggle_134", {
     end
 })
 
-v7:AddParagraph({Title = "â”€â”€ Dojo Quest â”€â”€", Content = ""})
+v7:AddParagraph({Title = "[ Dojo Quest ]", Content = ""})
 
 v7:AddButton({
     Title = "Teleport To Dragon Dojo",
@@ -8057,7 +8059,7 @@ spawn(function()
     end
 end)
 
-v8:AddParagraph({Title = "â”€â”€ Mirage Island / Full Moon â”€â”€", Content = ""})
+v8:AddParagraph({Title = "[ Mirage Island / Full Moon ]", Content = ""})
 
 local FullMoonStatus = v8:AddParagraph({
     Title = "Full Moon Status",
@@ -8102,7 +8104,7 @@ task.spawn(function()
     end
 end)
 
-v8:AddParagraph({Title = "â”€â”€ Mirage Island Features â”€â”€", Content = ""})
+v8:AddParagraph({Title = "[ Mirage Island Features ]", Content = ""})
 
 v8:AddToggle("Toggle_137", {
     Title = "Auto Find Mirage Island",
@@ -8308,7 +8310,7 @@ spawn(function()
     end
 end)
 
-v8:AddParagraph({Title = "â”€â”€ Advanced Fruit Dealer â”€â”€", Content = ""})
+v8:AddParagraph({Title = "[ Advanced Fruit Dealer ]", Content = ""})
 
 v8:AddToggle("Toggle_144", {
     Title = "Auto Tween Advanced Fruit Dealer",
@@ -8334,7 +8336,7 @@ spawn(function()
     end
 end)
 
-v8:AddParagraph({Title = "â”€â”€ Race V4 / Temple of Time â”€â”€", Content = ""})
+v8:AddParagraph({Title = "[ Race V4 / Temple of Time ]", Content = ""})
 
 v8:AddButton({
     Title = "Teleport to Temple of Time",
@@ -8440,7 +8442,7 @@ task.spawn(function()
     end
 end)
 
-v8:AddParagraph({Title = "â”€â”€ Trials Quest V4 â”€â”€", Content = ""})
+v8:AddParagraph({Title = "[ Trials Quest V4 ]", Content = ""})
 
 v8:AddToggle("Toggle_145", {
     Title = "Auto Pull Lever",
@@ -8648,7 +8650,7 @@ spawn(function()
     end
 end)
 
-v8:AddParagraph({Title = "â”€â”€ Moon / Race Abilities â”€â”€", Content = ""})
+v8:AddParagraph({Title = "[ Moon / Race Abilities ]", Content = ""})
 
 v8:AddToggle("Toggle_150", {
     Title = "Auto Look At Moon",
@@ -8700,7 +8702,7 @@ task.spawn(function()
     end
 end)
 
-v8:AddParagraph({Title = "â”€â”€ Upgrade Races V2 And V3 â”€â”€", Content = ""})
+v8:AddParagraph({Title = "[ Upgrade Races V2 And V3 ]", Content = ""})
 
 v8:AddToggle("Toggle_152", {
     Title = "Auto Upgrade Mink",
@@ -8919,7 +8921,7 @@ spawn(function()
     end
 end)
 
-v9:AddParagraph({Title = "â”€â”€ Fruits Options â”€â”€", Content = ""})
+v9:AddParagraph({Title = "[ Fruits Options ]", Content = ""})
 
 local function formatNumber(num)
     local formatted = tostring(num)
@@ -9008,7 +9010,7 @@ v9:AddButton({
     end
 })
 
-v9:AddParagraph({Title = "â”€â”€ Fruit Auto Functions â”€â”€", Content = ""})
+v9:AddParagraph({Title = "[ Fruit Auto Functions ]", Content = ""})
 
 v9:AddToggle("Toggle_156", {
     Title = "Auto Random Fruit",
@@ -9114,7 +9116,7 @@ spawn(function()
     end
 end)
 
-v9:AddParagraph({Title = "â”€â”€ Fruit Shop Sniper â”€â”€", Content = ""})
+v9:AddParagraph({Title = "[ Fruit Shop Sniper ]", Content = ""})
 
 local FruitList = {
     "Rocket-Rocket", "Spin-Spin", "Blade-Blade", "Spring-Spring",
@@ -9166,7 +9168,7 @@ spawn(function()
     end
 end)
 
-v9:AddParagraph({Title = "â”€â”€ Fruit Stock Checker â”€â”€", Content = ""})
+v9:AddParagraph({Title = "[ Fruit Stock Checker ]", Content = ""})
 
 local function CheckSpecificFruit(fruitName)
     local success, stock = pcall(function()
@@ -9263,7 +9265,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddParagraph({Title = "â”€â”€ Raid Status â”€â”€", Content = ""})
+v10:AddParagraph({Title = "[ Raid Status ]", Content = ""})
 
 local RaidTimerStatus = v10:AddParagraph({
     Title = "Raid Timer",
@@ -9293,7 +9295,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddParagraph({Title = "â”€â”€ Chip Selection â”€â”€", Content = ""})
+v10:AddParagraph({Title = "[ Chip Selection ]", Content = ""})
 
 local RaidChipList = {
     "Flame", "Ice", "Quake", "Light", "Dark", "String",
@@ -9314,7 +9316,7 @@ v10:AddDropdown("Dropdown_14", {
     end
 })
 
-v10:AddParagraph({Title = "â”€â”€ Buy Chip â”€â”€", Content = ""})
+v10:AddParagraph({Title = "[ Buy Chip ]", Content = ""})
 
 v10:AddButton({
     Title = "Buy Chip with Beli",
@@ -9430,7 +9432,7 @@ spawn(function()
     end
 end)
 
-v10:AddParagraph({Title = "â”€â”€ Raid Controls â”€â”€", Content = ""})
+v10:AddParagraph({Title = "[ Raid Controls ]", Content = ""})
 
 _G.AutoStartRaid = GetSetting("Raid_AutoStartRaid", false)
 v10:AddToggle("Toggle_166", {
@@ -9475,7 +9477,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddParagraph({Title = "â”€â”€ Auto Farm Dungeon â”€â”€", Content = ""})
+v10:AddParagraph({Title = "[ Auto Farm Dungeon ]", Content = ""})
 
 local RaidIslands = {"Island 1", "Island 2", "Island 3", "Island 4", "Island 5"}
 local CurrentTargetIsland = nil
@@ -9635,7 +9637,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddParagraph({Title = "â”€â”€ Teleport Floors â”€â”€", Content = ""})
+v10:AddParagraph({Title = "[ Teleport ]", Content = ""})
 
 v10:AddButton({
     Title = "TP to Floor 1 Start",
@@ -9692,7 +9694,7 @@ v10:AddButton({
     end
 })
 
-v10:AddParagraph({Title = "â”€â”€ Awakening â”€â”€", Content = ""})
+v10:AddParagraph({Title = "[ Awakening ]", Content = ""})
 
 _G.AutoAwaken = GetSetting("Raid_AutoAwaken", false)
 v10:AddToggle("Toggle_168", {
@@ -9716,7 +9718,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddParagraph({Title = "â”€â”€ Law/Order Raid â”€â”€", Content = ""})
+v10:AddParagraph({Title = "[ Law/Order Raid ]", Content = ""})
 
 v10:AddButton({
     Title = "Buy Law Microchip",
@@ -9809,7 +9811,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddParagraph({Title = "â”€â”€ Teleport â”€â”€", Content = ""})
+v10:AddParagraph({Title = "[ Teleport ]", Content = ""})
 
 _G.TpLab = GetSetting("Raid_TpLab", false)
 v10:AddToggle("Toggle_172", {
@@ -9834,7 +9836,7 @@ task.spawn(function()
     end
 end)
 
-v10:AddParagraph({Title = "â”€â”€ Kill Aura â”€â”€", Content = ""})
+v10:AddParagraph({Title = "[ Kill Aura ]", Content = ""})
 
 _G.KillAura = GetSetting("Raid_KillAura", false)
 _G.KillAuraRange = GetSetting("Raid_KillAuraRange", 500)
@@ -9929,7 +9931,7 @@ v10:AddButton({
     end
 })
 
-v11:AddParagraph({Title = "â”€â”€ Travel - Worlds â”€â”€", Content = ""})
+v11:AddParagraph({Title = "[ Travel - Worlds ]", Content = ""})
 
 v11:AddButton({
     Title = "Teleport Sea 1",
@@ -9952,7 +9954,7 @@ v11:AddButton({
     end
 })
 
-v11:AddParagraph({Title = "â”€â”€ Travel - Island â”€â”€", Content = ""})
+v11:AddParagraph({Title = "[ Travel - Island ]", Content = ""})
 
 local Location = {}
 for _, e in pairs(workspace._WorldOrigin.Locations:GetChildren()) do
@@ -10002,7 +10004,7 @@ v11:AddToggle("Toggle_174", {
     end,
 })
 
-v11:AddParagraph({Title = "â”€â”€ Travel - Portal â”€â”€", Content = ""})
+v11:AddParagraph({Title = "[ Travel - Portal ]", Content = ""})
 
 local Location_Portal = {}
 if World1 then
@@ -10054,7 +10056,7 @@ v11:AddButton({
     end
 })
 
-v11:AddParagraph({Title = "â”€â”€ Travel - NPCs â”€â”€", Content = ""})
+v11:AddParagraph({Title = "[ Travel - NPCs ]", Content = ""})
 
 local NPCList = {}
 for _, npc in pairs(replicated.NPCs:GetChildren()) do
@@ -10095,7 +10097,7 @@ spawn(function()
     end
 end)
 
-v13:AddParagraph({Title = "â”€â”€ Stats Upgrade â”€â”€", Content = ""})
+v13:AddParagraph({Title = "[ Stats Upgrade ]", Content = ""})
 
 local StatsValue = 10
 v13:AddSlider("Slider_3", {
@@ -10211,7 +10213,7 @@ spawn(function()
     end
 end)
 
-v13:AddParagraph({Title = "â”€â”€ ESP â”€â”€", Content = ""})
+v13:AddParagraph({Title = "[ ESP ]", Content = ""})
 
 local NumberESP = math.random(1, 1000000)
 local PlayerESPEnabled = false
@@ -10863,7 +10865,7 @@ local World1 = World1 or false
 local World2 = World2 or false
 local World3 = World3 or false
 
-v14:AddParagraph({Title = "â”€â”€ Purchase Melee V1 â”€â”€", Content = ""})
+v14:AddParagraph({Title = "[ Purchase Melee ]", Content = ""})
 
 local MeleeCoords = {
     ["Dark Step"] = {
@@ -11043,7 +11045,7 @@ v14:AddToggle("Toggle_190", {
     end
 })
 
-v14:AddParagraph({Title = "â”€â”€ Purchase Craft Sea Event Items â”€â”€", Content = ""})
+v14:AddParagraph({Title = "[ Item ]", Content = ""})
 
 v14:AddButton({
     Title = "Craft Dragonheart",
@@ -11133,7 +11135,7 @@ v14:AddButton({
     end
 })
 
-v14:AddParagraph({Title = "â”€â”€ Purchase Haki, Soru, Geppo â”€â”€", Content = ""})
+v14:AddParagraph({Title = "[ Purchase Haki, Soru, Geppo ]", Content = ""})
 
 v14:AddButton({
     Title = "Buy Geppo $10,000",
@@ -11167,7 +11169,7 @@ v14:AddButton({
     end
 })
 
-v14:AddParagraph({Title = "â”€â”€ Purchase Sword and Gun â”€â”€", Content = ""})
+v14:AddParagraph({Title = "[ Purchase Sword and Gun ]", Content = ""})
 
 v14:AddButton({
     Title = "Buy Cutlass $1,000",
@@ -11314,7 +11316,7 @@ v14:AddButton({
     end
 })
 
-v14:AddParagraph({Title = "â”€â”€ Buy Accessories â”€â”€", Content = ""})
+v14:AddParagraph({Title = "[ Buy Accessories ]", Content = ""})
 
 v14:AddButton({
     Title = "Buy Black Cape $50,000",
@@ -11340,7 +11342,7 @@ v14:AddButton({
     end
 })
 
-v14:AddParagraph({Title = "â”€â”€ Clan, Reset Stats â”€â”€", Content = ""})
+v14:AddParagraph({Title = "[ Clan, Reset Stats ]", Content = ""})
 
 v14:AddButton({
     Title = "Clan Ghoul",
@@ -11376,7 +11378,7 @@ v14:AddButton({
     end
 })
 
-v15:AddParagraph({Title = "â”€â”€ Server Functions â”€â”€", Content = ""})
+v15:AddParagraph({Title = "[ Server Functions ]", Content = ""})
 
 v15:AddButton({
     Title = "Redeem All Codes",
@@ -11414,7 +11416,7 @@ v15:AddButton({
     end
 })
 
-v15:AddParagraph({Title = "â”€â”€ Player GUI / Others â”€â”€", Content = ""})
+v15:AddParagraph({Title = "[ Other ]", Content = ""})
 
 v15:AddButton({
     Title = "Open Awakenings Expert",
@@ -11484,7 +11486,7 @@ task.spawn(function()
     end
 end)
 
-v15:AddParagraph({Title = "â”€â”€ Graphics / Haki Stats â”€â”€", Content = ""})
+v15:AddParagraph({Title = "[ Graphics / Haki Stats ]", Content = ""})
 
 local HakiStages = {"Stage 0", "Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5"}
 v15:AddDropdown("Dropdown_19", {
@@ -11504,7 +11506,7 @@ v15:AddButton({
     end
 })
 
-v15:AddParagraph({Title = "â”€â”€ Misc Graphics â”€â”€", Content = ""})
+v15:AddParagraph({Title = "[ Misc Graphics ]", Content = ""})
 
 v15:AddToggle("Toggle_194", {
     Title = "RTX Mode (Visual)",
@@ -11582,7 +11584,7 @@ v15:AddButton({
     end
 })
 
-v15:AddParagraph({Title = "â”€â”€ Configure - God â”€â”€", Content = ""})
+v15:AddParagraph({Title = "[ Configure - God ]", Content = ""})
 
 v15:AddButton({
     Title = "Rain Fruits (Client)",
@@ -11668,7 +11670,7 @@ task.spawn(function()
     end
 end)
 
-v12:AddParagraph({Title = "â”€â”€ Pvp, Aimbot, Movement â”€â”€", Content = ""})
+v12:AddParagraph({Title = "[ Aimbot ]", Content = ""})
 
 local playerList = {}
 
@@ -11745,7 +11747,7 @@ v12:AddToggle("Toggle_199", {
     end
 })
 
-v12:AddParagraph({Title = "â”€â”€ Aimbot â”€â”€", Content = ""})
+v12:AddParagraph({Title = "[ Aimbot ]", Content = ""})
 
 v12:AddToggle("Toggle_200", {
     Title = "Aimbot Cam Lock",
@@ -11791,7 +11793,7 @@ v12:AddToggle("Toggle_201", {
     end
 })
 
-v12:AddParagraph({Title = "â”€â”€ Speed/Jump â”€â”€", Content = ""})
+v12:AddParagraph({Title = "[ Speed / Jump ]", Content = ""})
 
 _G.WalkSpeedEnabled = _G.WalkSpeedEnabled or false
 _G.JumpEnabled = _G.JumpEnabled or false
@@ -11892,7 +11894,7 @@ v12:AddInput("Input_9", {Finished = true,
     end
 })
 
-v12:AddParagraph({Title = "â”€â”€ LocalPlayer Settings / Misc â”€â”€", Content = ""})
+v12:AddParagraph({Title = "[ LocalPlayer Settings ]", Content = ""})
 
 v12:AddToggle("Toggle_204", {
     Title = "Instance Mink V3 [ INF ]",
@@ -11960,7 +11962,7 @@ v12:AddToggle("Toggle_207", {
     end
 })
 
-v12:AddParagraph({Title = "â”€â”€ Settings Combat / Aimbot Settings â”€â”€", Content = ""})
+v12:AddParagraph({Title = "[ Aimbot ]", Content = ""})
 
 v12:AddToggle("Toggle_208", {
     Title = "Ignore Same Teams",
@@ -11996,7 +11998,7 @@ v12:AddToggle("Toggle_209", {
     end
 })
 
-v12:AddParagraph({Title = "â”€â”€ Select Team â”€â”€", Content = ""})
+v12:AddParagraph({Title = "[ Select Team ]", Content = ""})
 
 local selectedTeam = "Pirates"
 
