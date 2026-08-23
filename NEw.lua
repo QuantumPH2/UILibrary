@@ -1001,178 +1001,153 @@ Hop = function()
 			end;
 		end);
 	end;
-local C = Instance.new("Part", workspace);
-C.Size = Vector3.new(1, 1, 1);
-C.Name = "Rip_Indra";
-C.Anchored = true;
-C.CanCollide = false;
-C.CanTouch = false;
-C.Transparency = 1;
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
-local M = workspace:FindFirstChild(C.Name);
-if M and M ~= C then
-	M:Destroy();
-end;
+getgenv().TweenSpeed = 350
+getgenv().TweenSpeedFar = 350
+getgenv().TweenSpeedNear = 1000
 
-task.spawn(function()
-	while task.wait() do
-		if C and C.Parent == workspace then
-			if shouldTween then
-				(getgenv()).OnFarm = true;
-			else
-				(getgenv()).OnFarm = false;
-			end;
+local C = workspace:FindFirstChild("Rip_Indra")
+if not C then
+	C = Instance.new("Part")
+	C.Name = "Rip_Indra"
+	C.Size = Vector3.new(1, 1, 1)
+	C.Anchored = true
+	C.CanCollide = false
+	C.CanTouch = false
+	C.Transparency = 1
+	C.Parent = workspace
+end
+
+local ActiveTween = nil
+local CurrentTargetPos = nil
+local IsTweening = false
+
+RunService.Heartbeat:Connect(function()
+	pcall(function()
+		local char = plr.Character or Players.LocalPlayer.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+
+		if IsTweening or shouldTween then
+			hrp.CFrame = C.CFrame
+			hrp.Velocity = Vector3.zero
+			hrp.RotVelocity = Vector3.zero
+
+			local bodyClip = hrp:FindFirstChild("BodyClip")
+			if not bodyClip then
+				bodyClip = Instance.new("BodyVelocity")
+				bodyClip.Name = "BodyClip"
+				bodyClip.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+				bodyClip.Velocity = Vector3.zero
+				bodyClip.Parent = hrp
+			end
+
+			for _, v in pairs(char:GetChildren()) do
+				if v:IsA("BasePart") then
+					v.CanCollide = false
+				end
+			end
 		else
-			(getgenv()).OnFarm = false;
-		end;
-	end;
-end);
-
-task.spawn(function()
-	local I = game.Players.LocalPlayer;
-	repeat task.wait() until I.Character and I.Character.PrimaryPart;
-
-	C.CFrame = I.Character.PrimaryPart.CFrame;
-
-	while task.wait() do
-		pcall(function()
-			if (getgenv()).OnFarm then
-				if C and C.Parent == workspace then
-					local e = I.Character and I.Character.PrimaryPart;
-					if e and (e.Position - C.Position).Magnitude <= 200 then
-						e.CFrame = C.CFrame;
-					else
-						C.CFrame = e.CFrame;
-					end;
-				end;
-
-				local e = I.Character;
-				if e then
-					for _, v in pairs(e:GetChildren()) do
-						if v:IsA("BasePart") then
-							v.CanCollide = false;
-						end;
-					end;
-				end;
-
-			else
-				local e = I.Character;
-				if e then
-					for _, v in pairs(e:GetChildren()) do
-						if v:IsA("BasePart") then
-							v.CanCollide = true;
-						end;
-					end;
-				end;
-			end;
-		end);
-	end;
-end);
-
-getgenv().TweenSpeedFar = 300
-getgenv().TweenSpeedNear = 900
-
-_tp = function(I)
-local e = plr.Character;
-if not e or not e:FindFirstChild("HumanoidRootPart") then
-return;
-end;
-
-local HRP = e.HumanoidRootPart;
-
-shouldTween = true
-getgenv().OnFarm = false
-
-if HRP.Anchored then
-	HRP.Anchored = false
-	task.wait()
-end
-
-local dist = (I.Position - HRP.Position).Magnitude
-
-local speed = dist <= 90 and (getgenv().TweenSpeedNear or 900) or (getgenv().TweenSpeedFar or 300)
-
-local info = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
-local tween = game:GetService("TweenService"):Create(C, info, { CFrame = I })
-
-if e.Humanoid.Sit == true then
-	C.CFrame = CFrame.new(C.Position.X, I.Y, C.Position.Z)
-end
-
-tween:Play()
-
-task.spawn(function()
-	while tween.PlaybackState == Enum.PlaybackState.Playing do
-		if not shouldTween then
-			tween:Cancel()
-			break
+			local bodyClip = hrp:FindFirstChild("BodyClip")
+			if bodyClip then
+				bodyClip:Destroy()
+			end
 		end
-		task.wait(.1)
-	end
-
-	getgenv().OnFarm = true
+	end)
 end)
 
+local function StopActiveTween()
+	if ActiveTween then
+		ActiveTween:Cancel()
+		ActiveTween = nil
+	end
+	IsTweening = false
+	CurrentTargetPos = nil
+end
+
+_tp = function(I)
+	local char = plr.Character or Players.LocalPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp or not I then return end
+
+	local targetPos = I.Position
+	local currentPos = hrp.Position
+	local dist = (targetPos - currentPos).Magnitude
+
+	if dist <= 5 then
+		StopActiveTween()
+		C.CFrame = I
+		hrp.CFrame = I
+		return
+	end
+
+	if CurrentTargetPos and (CurrentTargetPos - targetPos).Magnitude < 3 and ActiveTween and ActiveTween.PlaybackState == Enum.PlaybackState.Playing then
+		return
+	end
+
+	StopActiveTween()
+
+	C.CFrame = hrp.CFrame
+	IsTweening = true
+	shouldTween = true
+	CurrentTargetPos = targetPos
+
+	local speed = dist <= 60 and (getgenv().TweenSpeedNear or 1000) or (getgenv().TweenSpeed or getgenv().TweenSpeedFar or 350)
+	local duration = math.clamp(dist / speed, 0.05, 120)
+
+	local info = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+	ActiveTween = TweenService:Create(C, info, { CFrame = I })
+
+	ActiveTween.Completed:Once(function(playbackState)
+		if playbackState == Enum.PlaybackState.Completed then
+			C.CFrame = I
+			hrp.CFrame = I
+			IsTweening = false
+			CurrentTargetPos = nil
+		end
+	end)
+
+	ActiveTween:Play()
 end
 
 TeleportToTarget = function(I)
-_tp(I)
+	_tp(I)
 end
 
 notween = function(I)
-plr.Character.HumanoidRootPart.CFrame = I
+	StopActiveTween()
+	local char = plr.Character or Players.LocalPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if hrp and I then
+		C.CFrame = I
+		hrp.CFrame = I
+	end
 end
 
 function BTP(I)
-	local e = game.Players.LocalPlayer;
-	local K = e.Character.HumanoidRootPart;
-	local n = e.Character.Humanoid;
-	local d = e.PlayerGui.Main;
-	local z = I.Position;
-	local H = K.Position;
+	local char = plr.Character or Players.LocalPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if hrp and I then
+		notween(I)
+	end
+end
 
-	repeat
-		n.Health = 0;
-		K.CFrame = I;
-		d.Quest.Visible = false;
-
-		if (K.Position - H).Magnitude > 1 then
-			H = K.Position;
-			K.CFrame = I;
-		end;
-
-		task.wait(.5);
-	until (I.Position - K.Position).Magnitude <= 2000;
-end;
 spawn(function()
-	while task.wait() do
+	while task.wait(0.2) do
 		pcall(function()
 			if _G.SailBoat_Hydra or _G.WardenBoss or _G.AutoFactory or _G.HighestMirage or _G.HCM or _G.PGB or _G.Leviathan1 or _G.UPGDrago or _G.Complete_Trials or _G.TpDrago_Prehis or _G.BuyDrago or _G.AutoFireFlowers or _G.DT_Uzoth or _G.AutoBerry or _G.Prehis_Find or _G.Prehis_Skills or _G.Prehis_DB or _G.Prehis_DE or _G.FarmBlazeEM or _G.Dojoo or _G.CollectPresent or _G.AutoLawKak or _G.TpLab or _G.AutoPhoenixF or _G.AutoFarmChest or _G.AutoHytHallow or _G.LongsWord or _G.BlackSpikey or _G.AutoHolyTorch or _G.TrainDrago or _G.AutoSaber or _G.FarmMastery_Dev or _G.CitizenQuest or _G.AutoEctoplasm or _G.KeysRen or _G.Auto_Rainbow_Haki or _G.obsFarm or _G.AutoBigmom or _G.Doughv2 or _G.AuraBoss or _G.Raiding or _G.Auto_Cavender or _G.TpPly or _G.Bartilo_Quest or _G.Level or _G.FarmEliteHunt or _G.AutoZou or _G.AutoFarm_Bone or (getgenv()).AutoMaterial or _G.CraftVM or _G.FrozenTP or _G.TPDoor or _G.AcientOne or _G.AutoFarmNear or _G.AutoRaidCastle or _G.DarkBladev3 or _G.AutoFarmRaid or _G.Auto_Cake_Prince or _G.Addealer or _G.TPNpc or _G.TwinHook or _G.FindMirage or _G.FarmChestM or _G.Shark or _G.TerrorShark or _G.Piranha or _G.MobCrew or _G.SeaBeast1 or _G.FishBoat or _G.Auto or _G.AutoPoleV2 or _G.Auto_SuperHuman or _G.AutoDeathStep or _G.Auto_SharkMan_Karate or _G.Auto_Electric_Claw or _G.AutoDragonTalon or _G.Auto_Def_DarkCoat or _G.Auto_God_Human or _G.Auto_Tushita or _G.AutoMatSoul or _G.AutoKenVTWO or _G.AutoSerpentBow or _G.AutoFMon or _G.Auto_Soul_Guitar or _G.TPGEAR or _G.AutoSaw or _G.AutoTridentW2 or _G.Auto_StartRaid or _G.AutoEvoRace or _G.AutoGetQuestBounty or _G.MarinesCoat or _G.TravelDres or _G.Defeating or _G.DummyMan or _G.Auto_Yama or _G.Auto_SwanGG or _G.SwanCoat or _G.AutoEcBoss or _G.Auto_Mink or _G.Auto_Human or _G.Auto_Skypiea or _G.Auto_Fish or _G.CDK_TS or _G.CDK_YM or _G.CDK or _G.AutoFarmGodChalice or _G.AutoFistDarkness or _G.AutoMiror or _G.Teleport or _G.AutoKilo or _G.AutoGetUsoap or _G.Praying or _G.TryLucky or _G.AutoColShad or _G.AutoUnHaki or _G.Auto_DonAcces or _G.AutoRipIngay or _G.DragoV3 or _G.DragoV1 or _G.SailBoats or NextIs or _G.FarmGodChalice or _G.IceBossRen or senth or senth2 or _G.Lvthan or _G.beasthunter or _G.DangerLV or _G.Relic123 or _G.tweenKitsune or _G.Collect_Ember or _G.AutofindKitIs or _G.snaguine or _G.TwFruits or _G.tweenKitShrine or _G.Tp_LgS or _G.Tp_MasterA or _G.tweenShrine or _G.FarmMastery_G or _G.FarmMastery_S then
-				shouldTween = true;
-				if not plr.Character.HumanoidRootPart:FindFirstChild("BodyClip") then
-					local I = Instance.new("BodyVelocity");
-					I.Name = "BodyClip";
-					I.Parent = plr.Character.HumanoidRootPart;
-					I.MaxForce = Vector3.new(100000, 100000, 100000);
-					I.Velocity = Vector3.new(0, 0, 0);
-				end;
-				for I, e in pairs(plr.Character:GetDescendants()) do
-					if e:IsA("BasePart") then
-						e.CanCollide = false;
-					end;
-				end;
+				shouldTween = true
 			else
-				shouldTween = false;
-				if plr.Character.HumanoidRootPart:FindFirstChild("BodyClip") then
-					(plr.Character.HumanoidRootPart:FindFirstChild("BodyClip")):Destroy();
-				end;
-				if plr.Character:FindFirstChild("highlight") then
-					(plr.Character:FindFirstChild("highlight")):Destroy();
-				end;
-			end;
-		end);
-	end;
-end);
+				if not IsTweening then
+					shouldTween = false
+				end
+			end
+		end)
+	end
+end)
 QuestB = function()
 		if World1 then
 			if _G.FindBoss == "The Gorilla King" then
@@ -2650,9 +2625,9 @@ local v15 = Window:AddTab({
     Title = "Settings", Icon = "settings-2"
 })
 
--- ===================================
--- INFO TAB - Quantum HUB
--- ===================================
+
+
+
 
 v0:AddParagraph({Title = "[ Quantum HUB ]", Content = ""})
 
@@ -3601,27 +3576,41 @@ spawn(function()
                 local plr = game.Players.LocalPlayer
                 local Root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
                 if not Root then return end
-                local QuestTitle = plr.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text
+                local QuestUI = plr.PlayerGui.Main.Quest
                 local Q = QuestNeta()
-                if not string.find(QuestTitle, Q[5]) then game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AbandonQuest") end
-                if not plr.PlayerGui.Main.Quest.Visible then
-                    TeleportConditional(Root, Q[6], TELEPORT_DISTANCE_THRESHOLD)
-                    if (Root.Position - Q[6].Position).Magnitude <= 50 then
-                        task.wait(1.9)
+
+                if QuestUI.Visible and QuestUI.Container.QuestTitle.Title.Text ~= "" then
+                    local QuestTitle = QuestUI.Container.QuestTitle.Title.Text
+                    if not string.find(QuestTitle, Q[5]) then
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AbandonQuest")
+                        task.wait(0.1)
+                    end
+                end
+
+                if not QuestUI.Visible then
+                    local distToNPC = (Root.Position - Q[6].Position).Magnitude
+                    if distToNPC > 30 then
+                        _tp(Q[6])
+                    else
                         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", Q[3], Q[2])
+                        task.wait(0.2)
                     end
                     return
                 end
+
                 local Nearest = GetNearestMob(Q[1])
-                if CurrentMob and G.Alive(CurrentMob) and CurrentMob.Parent then
-                    G.Kill(CurrentMob, true)
-                    return
-                else CurrentMob = nil end
-                if not Nearest then TeleportConditional(Root, Q[4], TELEPORT_DISTANCE_THRESHOLD) return end
-                CurrentMob = Nearest
-                if CurrentMob and CurrentMob:FindFirstChild("HumanoidRootPart") then _tp(CurrentMob.HumanoidRootPart.CFrame) end
-                repeat task.wait() G.Kill(CurrentMob, true) until not _G.StartFarm or not _G.Level or not CurrentMob.Parent or CurrentMob.Humanoid.Health <= 0
-                CurrentMob = nil
+                if Nearest and G.Alive(Nearest) and Nearest:FindFirstChild("HumanoidRootPart") then
+                    CurrentMob = Nearest
+                    repeat
+                        task.wait()
+                        if G.Alive(CurrentMob) and CurrentMob:FindFirstChild("HumanoidRootPart") then
+                            G.Kill(CurrentMob, true)
+                        end
+                    until not _G.StartFarm or not _G.Level or not G.Alive(CurrentMob) or not CurrentMob.Parent
+                    CurrentMob = nil
+                else
+                    _tp(Q[4] * CFrame.new(0, _G.MobHeight or 20, 0))
+                end
             end)
         end
     end
