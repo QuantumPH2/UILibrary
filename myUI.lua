@@ -384,35 +384,44 @@ local function PerformAttack(targetHRP)
     if not char then return end
 
     local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then
+        EquipWeapon(_G.SelectWeapon or "Melee")
+        tool = char:FindFirstChildOfClass("Tool")
+    end
     if not tool then return end
 
     local tip = tool.ToolTip or ""
 
-    -- Melee / default attack (klik mouse simulasi)
-    local function doClick()
-        local pos = targetHRP.Position
-        local vp = workspace.CurrentCamera:WorldToScreenPoint(pos)
-        if vim2 then
-            pcall(function()
-                vim2:ClickButton1(Vector2.new(vp.X, vp.Y))
-            end)
-        end
-    end
-
-    if tip == "Melee" or tip == "" then
-        doClick()
-        task.wait(0.05)
-        doClick()
-    elseif tip == "Sword" then
-        doClick()
-        task.wait(0.05)
-        doClick()
-    elseif tip == "Blox Fruit" then
+    if tip == "Blox Fruit" then
         UseFruitSkills()
-    elseif tip == "Gun" then
-        doClick()
-        task.wait(0.05)
-        doClick()
+    else
+        -- 1. Tool direct activation (triggers weapon swing & client hitbox)
+        pcall(function()
+            tool:Activate()
+        end)
+
+        -- 2. Blox Fruits Combat Remotes (instant server-side hit registration)
+        pcall(function()
+            local Net = game:GetService("ReplicatedStorage"):FindFirstChild("Modules")
+            Net = Net and Net:FindFirstChild("Net")
+            if Net then
+                local regAttack = Net:FindFirstChild("RE/RegisterAttack")
+                local regHit = Net:FindFirstChild("RE/RegisterHit")
+                if regAttack and regHit then
+                    regAttack:FireServer(0)
+                    regHit:FireServer(targetHRP, {{targetHRP.Parent, targetHRP}})
+                end
+            end
+        end)
+
+        -- 3. VirtualUser click fallback
+        pcall(function()
+            if vim2 then
+                local pos = targetHRP.Position
+                local vp = workspace.CurrentCamera:WorldToScreenPoint(pos)
+                vim2:ClickButton1(Vector2.new(vp.X, vp.Y))
+            end
+        end)
     end
 end
 
@@ -1085,116 +1094,111 @@ Hop = function()
 			end;
 		end);
 	end;
-local C = Instance.new("Part", workspace);
-C.Size = Vector3.new(1, 1, 1);
-C.Name = "Rip_Indra";
-C.Anchored = true;
-C.CanCollide = false;
-C.CanTouch = false;
-C.Transparency = 1;
+-- ============================================================
+-- UNIFIED SMOOTH TWEEN & MOVEMENT SYSTEM
+-- ============================================================
+local currentTween = nil
+getgenv().TweenSpeed = 300
+getgenv().OnFarm = false
+shouldTween = false
 
-local M = workspace:FindFirstChild(C.Name);
-if M and M ~= C then
-	M:Destroy();
-end;
+-- Noclip & Anti-Fall Loop (smooth, no stutter)
+Services.RunService.Stepped:Connect(function()
+    if shouldTween or _G.StartFarm or getgenv().OnFarm then
+        local char = plr.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") and part.CanCollide then
+                    part.CanCollide = false
+                end
+            end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local bv = hrp:FindFirstChild("FarmBV")
+                if not bv then
+                    bv = Instance.new("BodyVelocity")
+                    bv.Name = "FarmBV"
+                    bv.MaxForce = Vector3.new(0, 50000, 0)
+                    bv.Velocity = Vector3.zero
+                    bv.Parent = hrp
+                end
+            end
+        end
+    else
+        local char = plr.Character
+        if char then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local bv = hrp:FindFirstChild("FarmBV")
+                if bv then bv:Destroy() end
+                local oldBv = hrp:FindFirstChild("BodyClip")
+                if oldBv then oldBv:Destroy() end
+            end
+        end
+    end
+end)
 
-task.spawn(function()
-	while task.wait() do
-		if C and C.Parent == workspace then
-			if shouldTween then
-				(getgenv()).OnFarm = true;
-			else
-				(getgenv()).OnFarm = false;
-			end;
-		else
-			(getgenv()).OnFarm = false;
-		end;
-	end;
-end);
+_tp = function(targetCFrame)
+    if not targetCFrame then return end
+    local char = plr.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
 
-task.spawn(function()
-	local I = game.Players.LocalPlayer;
-	repeat task.wait() until I.Character and I.Character.PrimaryPart;
-
-	C.CFrame = I.Character.PrimaryPart.CFrame;
-
-	while task.wait() do
-		pcall(function()
-			if (getgenv()).OnFarm then
-				if C and C.Parent == workspace then
-					local e = I.Character and I.Character.PrimaryPart;
-					if e and (e.Position - C.Position).Magnitude <= 200 then
-						e.CFrame = C.CFrame;
-					else
-						C.CFrame = e.CFrame;
-					end;
-				end;
-
-				local e = I.Character;
-				if e then
-					for _, v in pairs(e:GetChildren()) do
-						if v:IsA("BasePart") then
-							v.CanCollide = false;
-						end;
-					end;
-				end;
-
-			else
-				local e = I.Character;
-				if e then
-					for _, v in pairs(e:GetChildren()) do
-						if v:IsA("BasePart") then
-							v.CanCollide = true;
-						end;
-					end;
-				end;
-			end;
-		end);
-	end;
-end);
-
-getgenv().TweenSpeedFar = 300
-getgenv().TweenSpeedNear = 900
-
-_tp = function(I)
-    local e = plr.Character
-    if not e then return end
-    local HRP = e:FindFirstChild("HumanoidRootPart")
-    if not HRP then return end
-
-    if HRP.Anchored then
-        HRP.Anchored = false
+    if hrp.Anchored then
+        hrp.Anchored = false
     end
 
-    local dist = (I.Position - HRP.Position).Magnitude
+    local dist = (targetCFrame.Position - hrp.Position).Magnitude
 
-    -- Jarak sangat dekat: instant TP (tidak perlu tween, lebih ringan)
-    if dist <= 50 then
-        HRP.CFrame = I
+    -- Short distance -> Instant positioning (smooth, zero tween overhead)
+    if dist <= 25 then
+        if currentTween then
+            currentTween:Cancel()
+            currentTween = nil
+        end
+        hrp.CFrame = targetCFrame
         getgenv().OnFarm = true
         return
     end
 
+    -- Long distance -> Smooth Linear Tween
     shouldTween = true
     getgenv().OnFarm = false
 
-    if e.Humanoid and e.Humanoid.Sit then
-        HRP.CFrame = CFrame.new(HRP.Position.X, I.Y, HRP.Position.Z)
+    if char:FindFirstChild("Humanoid") and char.Humanoid.Sit then
+        char.Humanoid.Sit = false
     end
 
-    -- Tween hanya untuk jarak jauh
-    local speed = dist <= 90 and (getgenv().TweenSpeedNear or 900) or (getgenv().TweenSpeedFar or 300)
-    local info = TweenInfo.new(dist / speed, Enum.EasingStyle.Linear)
+    local speed = getgenv().TweenSpeed or 300
+    local tweenTime = dist / speed
+    local info = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear)
 
-    -- Tween langsung di HRP, tidak pakai Part C proxy (lebih akurat)
-    local tween = game:GetService("TweenService"):Create(HRP, info, { CFrame = I })
+    if currentTween then
+        currentTween:Cancel()
+        currentTween = nil
+    end
+
+    local tween = Services.TweenService:Create(hrp, info, { CFrame = targetCFrame })
+    currentTween = tween
     tween:Play()
 
     task.spawn(function()
         tween.Completed:Wait()
-        getgenv().OnFarm = true
-        shouldTween = false
+        if currentTween == tween then
+            currentTween = nil
+            getgenv().OnFarm = true
+            shouldTween = false
+        end
     end)
+end
+
+function stopTween()
+    if currentTween then
+        currentTween:Cancel()
+        currentTween = nil
+    end
+    shouldTween = false
 end
 
 TeleportToTarget = function(I)
@@ -1227,35 +1231,7 @@ function BTP(I)
 		task.wait(.5);
 	until (I.Position - K.Position).Magnitude <= 2000;
 end;
-spawn(function()
-	while task.wait() do
-		pcall(function()
-			if _G.SailBoat_Hydra or _G.WardenBoss or _G.AutoFactory or _G.HighestMirage or _G.HCM or _G.PGB or _G.Leviathan1 or _G.UPGDrago or _G.Complete_Trials or _G.TpDrago_Prehis or _G.BuyDrago or _G.AutoFireFlowers or _G.DT_Uzoth or _G.AutoBerry or _G.Prehis_Find or _G.Prehis_Skills or _G.Prehis_DB or _G.Prehis_DE or _G.FarmBlazeEM or _G.Dojoo or _G.CollectPresent or _G.AutoLawKak or _G.TpLab or _G.AutoPhoenixF or _G.AutoFarmChest or _G.AutoHytHallow or _G.LongsWord or _G.BlackSpikey or _G.AutoHolyTorch or _G.TrainDrago or _G.AutoSaber or _G.FarmMastery_Dev or _G.CitizenQuest or _G.AutoEctoplasm or _G.KeysRen or _G.Auto_Rainbow_Haki or _G.obsFarm or _G.AutoBigmom or _G.Doughv2 or _G.AuraBoss or _G.Raiding or _G.Auto_Cavender or _G.TpPly or _G.Bartilo_Quest or _G.Level or _G.FarmEliteHunt or _G.AutoZou or _G.AutoFarm_Bone or (getgenv()).AutoMaterial or _G.CraftVM or _G.FrozenTP or _G.TPDoor or _G.AcientOne or _G.AutoFarmNear or _G.AutoRaidCastle or _G.DarkBladev3 or _G.AutoFarmRaid or _G.Auto_Cake_Prince or _G.Addealer or _G.TPNpc or _G.TwinHook or _G.FindMirage or _G.FarmChestM or _G.Shark or _G.TerrorShark or _G.Piranha or _G.MobCrew or _G.SeaBeast1 or _G.FishBoat or _G.Auto or _G.AutoPoleV2 or _G.Auto_SuperHuman or _G.AutoDeathStep or _G.Auto_SharkMan_Karate or _G.Auto_Electric_Claw or _G.AutoDragonTalon or _G.Auto_Def_DarkCoat or _G.Auto_God_Human or _G.Auto_Tushita or _G.AutoMatSoul or _G.AutoKenVTWO or _G.AutoSerpentBow or _G.AutoFMon or _G.Auto_Soul_Guitar or _G.TPGEAR or _G.AutoSaw or _G.AutoTridentW2 or _G.Auto_StartRaid or _G.AutoEvoRace or _G.AutoGetQuestBounty or _G.MarinesCoat or _G.TravelDres or _G.Defeating or _G.DummyMan or _G.Auto_Yama or _G.Auto_SwanGG or _G.SwanCoat or _G.AutoEcBoss or _G.Auto_Mink or _G.Auto_Human or _G.Auto_Skypiea or _G.Auto_Fish or _G.CDK_TS or _G.CDK_YM or _G.CDK or _G.AutoFarmGodChalice or _G.AutoFistDarkness or _G.AutoMiror or _G.Teleport or _G.AutoKilo or _G.AutoGetUsoap or _G.Praying or _G.TryLucky or _G.AutoColShad or _G.AutoUnHaki or _G.Auto_DonAcces or _G.AutoRipIngay or _G.DragoV3 or _G.DragoV1 or _G.SailBoats or NextIs or _G.FarmGodChalice or _G.IceBossRen or senth or senth2 or _G.Lvthan or _G.beasthunter or _G.DangerLV or _G.Relic123 or _G.tweenKitsune or _G.Collect_Ember or _G.AutofindKitIs or _G.snaguine or _G.TwFruits or _G.tweenKitShrine or _G.Tp_LgS or _G.Tp_MasterA or _G.tweenShrine or _G.FarmMastery_G or _G.FarmMastery_S then
-				shouldTween = true;
-				if not plr.Character.HumanoidRootPart:FindFirstChild("BodyClip") then
-					local I = Instance.new("BodyVelocity");
-					I.Name = "BodyClip";
-					I.Parent = plr.Character.HumanoidRootPart;
-					I.MaxForce = Vector3.new(100000, 100000, 100000);
-					I.Velocity = Vector3.new(0, 0, 0);
-				end;
-				for I, e in pairs(plr.Character:GetDescendants()) do
-					if e:IsA("BasePart") then
-						e.CanCollide = false;
-					end;
-				end;
-			else
-				shouldTween = false;
-				if plr.Character.HumanoidRootPart:FindFirstChild("BodyClip") then
-					(plr.Character.HumanoidRootPart:FindFirstChild("BodyClip")):Destroy();
-				end;
-				if plr.Character:FindFirstChild("highlight") then
-					(plr.Character:FindFirstChild("highlight")):Destroy();
-				end;
-			end;
-		end);
-	end;
-end);
+
 QuestB = function()
 		if World1 then
 			if _G.FindBoss == "The Gorilla King" then
@@ -3373,87 +3349,17 @@ spawn(function()
 end)
 
 local function GetTargetByLevel()
-    local myLevel = game.Players.LocalPlayer.Data.Level.Value
-
-if myLevel >= 2575 then
+    local Q = QuestNeta()
+    if not Q or not Q[1] or not Q[3] or not Q[4] or not Q[6] then return nil end
     return {
-        Name = "Skull Slayer",
-        QuestArgs = {"StartQuest", "TikiQuest3", 2},
-        QuestPos = CFrame.new(
-            -16665.0879, 105.27478, 1577.61743,
-            -0.999621451, 3.5280582e-08, 0.0275127869,
-             3.5990368e-08, 1, 2.53032191e-08,
-            -0.0275127869, 2.62838356e-08, -0.999621451
-        ),
-        FarmPos = CFrame.new(-16709.49, 419.68, 1751.09)
-    }
-
-elseif myLevel > 2550 then
-    return {
-        Name = "Serpent Hunter",
-        QuestArgs = {"StartQuest", "TikiQuest3", 1},
-        QuestPos = CFrame.new(
-            -16665.0879, 105.27478, 1577.61743,
-            -0.999621451, 3.5280582e-08, 0.0275127869,
-             3.5990368e-08, 1, 2.53032191e-08,
-            -0.0275127869, 2.62838356e-08, -0.999621451
-        ),
-        FarmPos = CFrame.new(-16645.64, 163.09, 1352.87)
-    }
-
-elseif myLevel >= 2525 then
-    return {
-        Name = "Isle Champion",
-        QuestArgs = {"StartQuest", "TikiQuest2", 2},
-        QuestPos = CFrame.new(
-            -16546.748, 55.7216759, -172.865311,
-            -0.0595058464, 2.45485676e-08, 0.998227954,
-            -5.3272025e-08, 1, -2.77677703e-08,
-            -0.998227954, -5.48299717e-08, -0.0595058464
-        ),
-        FarmPos = CFrame.new(-16602.1015625, 130.38734436035, 1087.2456054688)
-    }
-
-elseif myLevel >= 2500 then
-    return {
-        Name = "Sun-kissed Warrior",
-        QuestArgs = {"StartQuest", "TikiQuest2", 1},
-        QuestPos = CFrame.new(
-            -16546.748, 55.7216759, -172.865311,
-            -0.0595058464, 2.45485676e-08, 0.998227954,
-            -5.3272025e-08, 1, -2.77677703e-08,
-            -0.998227954, -5.48299717e-08, -0.0595058464
-        ),
-        FarmPos = CFrame.new(-16347, 64, 984)
-    }
-
-elseif myLevel >= 2475 then
-    return {
-        Name = "Island Boy",
-        QuestArgs = {"StartQuest", "TikiQuest1", 2},
-        QuestPos = CFrame.new(
-            -16546.748, 55.7216759, -172.865311,
-            -0.0595058464, 2.45485676e-08, 0.998227954,
-            -5.3272025e-08, 1, -2.77677703e-08,
-            -0.998227954, -5.48299717e-08, -0.0595058464
-        ),
-        FarmPos = CFrame.new(-16670, 43, -270)
-    }
-
-else
-    return {
-        Name = "Isle Outlaw",
-        QuestArgs = {"StartQuest", "TikiQuest1", 1},
-        QuestPos = CFrame.new(
-            -16546.748, 55.7216759, -172.865311,
-            -0.0595058464, 2.45485676e-08, 0.998227954,
-            -5.3272025e-08, 1, -2.77677703e-08,
-            -0.998227954, -5.48299717e-08, -0.0595058464
-        ),
-        FarmPos = CFrame.new(-16350, 45, -180)
+        Name = Q[1],
+        QuestArgs = {"StartQuest", Q[3], Q[2]},
+        QuestPos = Q[6],
+        FarmPos = Q[4],
+        DisplayName = Q[5] or Q[1]
     }
 end
-end
+
 
 local function GetEyesCount()
     local model = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("TikiOutpost") and workspace.Map.TikiOutpost:FindFirstChild("IslandModel")
@@ -3683,52 +3589,144 @@ spawn(function()
     end
 end)
 
+-- ============================================================
+-- LEVEL FARM LOOP — Rewrite mendalam
+-- Flow: Ambil quest → TP ke mob → Kill → ulangi
+-- ============================================================
 local CurrentMob = nil
+local _levelFarmBusy = false
 
 local function GetNearestMob(TargetName)
-    local plr = game.Players.LocalPlayer
-    local Root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-    if not Root then return nil end
-    local Closest, Dist = nil, math.huge
-    for _, Mob in pairs(workspace.Enemies:GetChildren()) do
-        if G.Alive(Mob) and Mob.Name == TargetName and Mob:FindFirstChild("HumanoidRootPart") then
-            local d = (Mob.HumanoidRootPart.Position - Root.Position).Magnitude
-            if d < Dist then Dist = d Closest = Mob end
+    local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+    local closest, closestDist = nil, math.huge
+    for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+        if G.Alive(mob) and mob.Name == TargetName and mob:FindFirstChild("HumanoidRootPart") then
+            local d = (mob.HumanoidRootPart.Position - root.Position).Magnitude
+            if d < closestDist then
+                closestDist = d
+                closest = mob
+            end
         end
     end
-    return Closest
+    return closest
 end
 
-spawn(function()
-    while task.wait() do
-        if _G.Level and _G.StartFarm then
-            pcall(function()
-                local plr = game.Players.LocalPlayer
-                local Root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-                if not Root then return end
-                local QuestTitle = plr.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text
-                local Q = QuestNeta()
-                if not string.find(QuestTitle, Q[5]) then game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AbandonQuest") end
-                if not plr.PlayerGui.Main.Quest.Visible then
-                    TeleportConditional(Root, Q[6], TELEPORT_DISTANCE_THRESHOLD)
-                    if (Root.Position - Q[6].Position).Magnitude <= 50 then
-                        task.wait(1.9)
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", Q[3], Q[2])
-                    end
-                    return
-                end
-                local Nearest = GetNearestMob(Q[1])
-                if CurrentMob and G.Alive(CurrentMob) and CurrentMob.Parent then
-                    G.Kill(CurrentMob, true)
-                    return
-                else CurrentMob = nil end
-                if not Nearest then TeleportConditional(Root, Q[4], TELEPORT_DISTANCE_THRESHOLD) return end
-                CurrentMob = Nearest
-                if CurrentMob and CurrentMob:FindFirstChild("HumanoidRootPart") then _tp(CurrentMob.HumanoidRootPart.CFrame) end
-                repeat task.wait() G.Kill(CurrentMob, true) until not _G.StartFarm or not _G.Level or not CurrentMob.Parent or CurrentMob.Humanoid.Health <= 0
-                CurrentMob = nil
-            end)
+task.spawn(function()
+    while true do
+        task.wait(0.1) -- Fast and responsive loop
+
+        if not (_G.Level and _G.StartFarm) then
+            CurrentMob = nil
+            _levelFarmBusy = false
+            continue
         end
+
+        if _levelFarmBusy then continue end
+
+        pcall(function()
+            _levelFarmBusy = true
+
+            local char = plr.Character
+            if not char then _levelFarmBusy = false return end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if not hrp then _levelFarmBusy = false return end
+
+            local data = GetTargetByLevel()
+            if not data then _levelFarmBusy = false return end
+
+            local QuestUI = plr.PlayerGui and plr.PlayerGui:FindFirstChild("Main") and plr.PlayerGui.Main:FindFirstChild("Quest")
+            local hasQuest = QuestUI and QuestUI.Visible
+
+            -- STEP 1: Ambil quest jika belum ada
+            if _G.AcceptQuest and not hasQuest then
+                local distToNPC = (hrp.Position - data.QuestPos.Position).Magnitude
+                if distToNPC > 25 then
+                    _tp(data.QuestPos)
+                else
+                    pcall(function()
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(data.QuestArgs))
+                    end)
+                    task.wait(0.4)
+                end
+                _levelFarmBusy = false
+                return
+            end
+
+            -- STEP 2: Cari mob yang sesuai dengan quest
+            if CurrentMob and (not CurrentMob.Parent or not G.Alive(CurrentMob)) then
+                CurrentMob = nil
+            end
+
+            if not CurrentMob then
+                CurrentMob = GetNearestMob(data.Name)
+            end
+
+            -- STEP 3: Jika belum ada mob di sekitar, travel ke spawn area
+            if not CurrentMob then
+                local distToFarm = (hrp.Position - data.FarmPos.Position).Magnitude
+                if distToFarm > 25 then
+                    _tp(data.FarmPos)
+                else
+                    hrp.CFrame = data.FarmPos * CFrame.new(0, _G.MobHeight or 20, 0)
+                end
+                task.wait(0.5)
+                _levelFarmBusy = false
+                return
+            end
+
+            -- STEP 4: Serang mob
+            local mobHRP = CurrentMob:FindFirstChild("HumanoidRootPart")
+            if not mobHRP then
+                CurrentMob = nil
+                _levelFarmBusy = false
+                return
+            end
+
+            -- Tarik mob terdekat ke area pertempuran
+            PosMon = mobHRP.Position
+            _B = true
+            BringEnemy()
+
+            -- Posisikan di atas target
+            local targetCFrame = mobHRP.CFrame * CFrame.new(0, _G.MobHeight or 20, 0)
+            local distToMob = (hrp.Position - targetCFrame.Position).Magnitude
+
+            if distToMob > 40 then
+                _tp(targetCFrame)
+            else
+                hrp.CFrame = targetCFrame
+            end
+
+            -- Hadapkan karakter ke mob
+            FaceTarget(mobHRP.Position)
+
+            -- Eksekusi serangan
+            EquipWeapon(_G.SelectWeapon)
+            PerformAttack(mobHRP)
+
+            -- Loop serang sampai mob mati
+            local attackTicks = 0
+            while G.Alive(CurrentMob) and CurrentMob.Parent and _G.Level and _G.StartFarm and attackTicks < 40 do
+                task.wait(0.1)
+                attackTicks = attackTicks + 1
+
+                if CurrentMob and CurrentMob:FindFirstChild("HumanoidRootPart") then
+                    local mHRP = CurrentMob.HumanoidRootPart
+                    hrp.CFrame = mHRP.CFrame * CFrame.new(0, _G.MobHeight or 20, 0)
+                    FaceTarget(mHRP.Position)
+                    PerformAttack(mHRP)
+                else
+                    break
+                end
+            end
+
+            if not G.Alive(CurrentMob) then
+                CurrentMob = nil
+            end
+        end)
+
+        _levelFarmBusy = false
     end
 end)
 
