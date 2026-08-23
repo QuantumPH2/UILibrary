@@ -3535,32 +3535,14 @@ local function GetNearestMob(TargetName)
     local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
     if not root then return nil end
     local closest, closestDist = nil, math.huge
-
-    local function scanFolder(folder)
-        if not folder then return end
-        for _, mob in ipairs(folder:GetChildren()) do
-            if G.Alive(mob) and mob:FindFirstChild("HumanoidRootPart") then
-                local isMatch = false
-                if not TargetName or TargetName == "" then
-                    isMatch = true
-                elseif mob.Name == TargetName or string.find(mob.Name, TargetName) or string.find(TargetName, mob.Name) then
-                    isMatch = true
-                end
-
-                if isMatch and not Players:GetPlayerFromCharacter(mob) then
-                    local d = (mob.HumanoidRootPart.Position - root.Position).Magnitude
-                    if d < closestDist then
-                        closestDist = d
-                        closest = mob
-                    end
-                end
+    for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+        if G.Alive(mob) and mob.Name == TargetName and mob:FindFirstChild("HumanoidRootPart") then
+            local d = (mob.HumanoidRootPart.Position - root.Position).Magnitude
+            if d < closestDist then
+                closestDist = d
+                closest = mob
             end
         end
-    end
-
-    scanFolder(workspace:FindFirstChild("Enemies"))
-    if not closest then
-        scanFolder(workspace:FindFirstChild("Characters"))
     end
     return closest
 end
@@ -3596,20 +3578,7 @@ task.spawn(function()
             if not data then _levelFarmBusy = false return end
 
             local QuestUI = plr.PlayerGui and plr.PlayerGui:FindFirstChild("Main") and plr.PlayerGui.Main:FindFirstChild("Quest")
-            local hasQuest = false
-            if QuestUI and QuestUI.Visible then
-                local questTitleObj = QuestUI:FindFirstChild("Container") and QuestUI.Container:FindFirstChild("QuestTitle") and QuestUI.Container.QuestTitle:FindFirstChild("Title")
-                if questTitleObj and questTitleObj.Text and questTitleObj.Text ~= "" then
-                    local title = questTitleObj.Text
-                    if string.find(title, data.Name) or string.find(title, data.DisplayName) or (data.DisplayName and string.find(data.DisplayName, title)) then
-                        hasQuest = true
-                    else
-                        hasQuest = false
-                    end
-                else
-                    hasQuest = true
-                end
-            end
+            local hasQuest = QuestUI and QuestUI.Visible
 
             if not hasQuest then
                 CurrentMob = nil
@@ -3621,7 +3590,7 @@ task.spawn(function()
                     pcall(function()
                         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(data.QuestArgs))
                     end)
-                    task.wait(0.4)
+                    task.wait(0.3)
                 end
                 _levelFarmBusy = false
                 return
@@ -3664,38 +3633,25 @@ task.spawn(function()
                 return
             end
 
-            if currentTween then
-                currentTween:Cancel()
-                currentTween = nil
-            end
-            shouldTween = false
-
             PosMon = mobHRP.Position
             _B = true
-            BringEnemy(data.Name)
+            BringEnemy()
 
-            EquipWeapon(_G.ChooseWP or _G.SelectWeapon or "Melee")
+            hrp.CFrame = targetCFrame
+            FaceTarget(mobHRP.Position)
+            EquipWeapon(_G.SelectWeapon)
+            PerformAttack(mobHRP)
 
             local attackTicks = 0
-            while G.Alive(CurrentMob) and CurrentMob.Parent and _G.Level and _G.StartFarm and attackTicks < 60 do
+            while G.Alive(CurrentMob) and CurrentMob.Parent and _G.Level and _G.StartFarm and attackTicks < 30 do
                 task.wait(0.1)
                 attackTicks = attackTicks + 1
 
-                local currentChar = plr.Character
-                if not currentChar or not currentChar.Parent then break end
-                local currentHum = currentChar:FindFirstChild("Humanoid")
-                if not currentHum or currentHum.Health <= 0 then break end
-
                 if CurrentMob and CurrentMob:FindFirstChild("HumanoidRootPart") then
                     local mHRP = CurrentMob.HumanoidRootPart
-                    local currentMyHRP = currentChar:FindFirstChild("HumanoidRootPart")
-                    if currentMyHRP then
-                        currentMyHRP.CFrame = mHRP.CFrame * CFrame.new(0, _G.MobHeight or 20, 0)
-                        currentMyHRP.Velocity = Vector3.zero
-                        currentMyHRP.RotVelocity = Vector3.zero
-                        FaceTarget(mHRP.Position)
-                        PerformAttack(mHRP)
-                    end
+                    hrp.CFrame = mHRP.CFrame * CFrame.new(0, _G.MobHeight or 20, 0)
+                    FaceTarget(mHRP.Position)
+                    PerformAttack(mHRP)
                 else
                     break
                 end
