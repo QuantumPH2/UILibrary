@@ -1031,35 +1031,168 @@ local function GetHRP()
 	return char and char:FindFirstChild("HumanoidRootPart")
 end
 
-local function IsAnyFarmActive()
+function IsAnyFarmActive()
 	if _G.FarmPriorityElf or _G.FarmElfLevelCustom or _G.FarmMastery_S then
 		return true
 	end
-	return _G.StartFarm and (
-		_G.Level or
-		_G.AutoFarm_Bone or
-		_G.AutoFarm_Cake or
+	if _G.StartFarm and (_G.Level or _G.AutoFarm_Bone or _G.AutoFarm_Cake or _G.AutoTyrant) then
+		return true
+	end
+	return (
+		_G.AutoFarmNear or
+		_G.AutoFactory or
+		_G.AutoRaidCastle or
+		_G.AutoFarmChest or
+		_G.AutoBerry or
+		(getgenv()).AutoMaterial or
+		_G.Rdbone or
+		_G.AutoHytHallow or
+		_G.Pray or
+		_G.Trylux or
+		_G.AutoBoss or
+		_G.FarmAllBoss or
 		_G.FarmMastery_Dev or
 		_G.FarmMastery_G or
-		(getgenv()).AutoMaterial or
-		_G.AutoTyrant or
-		_G.SailBoat_Hydra or _G.WardenBoss or _G.AutoFactory or _G.HighestMirage or _G.HCM or _G.PGB or _G.Leviathan1 or _G.UPGDrago or _G.Complete_Trials or _G.TpDrago_Prehis or _G.BuyDrago or _G.AutoFireFlowers or _G.DT_Uzoth or _G.AutoBerry or _G.Prehis_Find or _G.Prehis_Skills or _G.Prehis_DB or _G.Prehis_DE or _G.FarmBlazeEM or _G.Dojoo or _G.CollectPresent or _G.AutoLawKak or _G.TpLab or _G.AutoPhoenixF or _G.AutoFarmChest or _G.AutoHytHallow or _G.LongsWord or _G.BlackSpikey or _G.AutoHolyTorch or _G.TrainDrago or _G.AutoSaber or _G.FarmMastery_Dev or _G.CitizenQuest or _G.AutoEctoplasm or _G.KeysRen or _G.Auto_Rainbow_Haki or _G.obsFarm or _G.AutoBigmom or _G.Doughv2 or _G.AuraBoss or _G.Raiding or _G.Auto_Cavender or _G.TpPly or _G.Bartilo_Quest or _G.FarmEliteHunt or _G.AutoZou or _G.CraftVM or _G.FrozenTP or _G.TPDoor or _G.AcientOne or _G.AutoFarmNear or _G.AutoRaidCastle or _G.DarkBladev3 or _G.AutoFarmRaid or _G.Auto_Cake_Prince or _G.Addealer or _G.TPNpc or _G.TwinHook or _G.FindMirage or _G.FarmChestM or _G.Shark or _G.TerrorShark or _G.Piranha or _G.MobCrew or _G.SeaBeast1 or _G.FishBoat or _G.Auto or _G.AutoPoleV2 or _G.Auto_SuperHuman or _G.AutoDeathStep or _G.Auto_SharkMan_Karate or _G.Auto_Electric_Claw or _G.AutoDragonTalon or _G.Auto_Def_DarkCoat or _G.Auto_God_Human or _G.Auto_Tushita or _G.AutoMatSoul or _G.AutoKenVTWO or _G.AutoSerpentBow or _G.AutoFMon or _G.Auto_Soul_Guitar or _G.TPGEAR or _G.AutoSaw or _G.AutoTridentW2 or _G.Auto_StartRaid or _G.AutoEvoRace or _G.AutoGetQuestBounty or _G.MarinesCoat or _G.TravelDres or _G.Defeating or _G.DummyMan or _G.Auto_Yama or _G.Auto_SwanGG or _G.SwanCoat or _G.AutoEcBoss or _G.Auto_Mink or _G.Auto_Human or _G.Auto_Skypiea or _G.Auto_Fish or _G.CDK_TS or _G.CDK_YM or _G.CDK or _G.AutoFarmGodChalice or _G.AutoFistDarkness or _G.AutoMiror or _G.Teleport or _G.AutoKilo or _G.AutoGetUsoap or _G.Praying or _G.TryLucky or _G.AutoColShad or _G.AutoUnHaki or _G.Auto_DonAcces or _G.AutoRipIngay or _G.DragoV3 or _G.DragoV1 or _G.SailBoats or NextIs or _G.FarmGodChalice or _G.IceBossRen or senth or senth2 or _G.Lvthan or _G.beasthunter or _G.DangerLV or _G.Relic123 or _G.tweenKitsune or _G.Collect_Ember or _G.AutofindKitIs or _G.snaguine or _G.TwFruits or _G.tweenKitShrine or _G.Tp_LgS or _G.Tp_MasterA or _G.tweenShrine
-	)
+		_G.AutoFishing or
+		_G.AutoFishingQuest or
+		_G.TravelDres or
+		_G.AutoZou or
+		_G.obsFarm or
+		_G.AutoKenVTWO or
+		_G.CitizenQuest or
+		_G.FarmEliteHunt or
+		_G.Auto_Tushita or
+		_G.Auto_Yama or
+		_G.AutoTridentW2 or
+		_G.AutoSaw or
+		_G.SwanCoat or
+		_G.MarinesCoat or
+		_G.WardenBoss or
+		_G.AutoColShad or
+		_G.AutoEcBoss or
+		_G.IceBossRen or
+		_G.KeysRen or
+		_G.Greybeard or
+		_G.CDK or
+		_G.CDK_YM or
+		_G.CDK_TS or
+		_G.Tp_LgS or
+		_G.Auto_SwanGG or
+		_G.Auto_Cavender or
+		_G.AutoBigmom or
+		_G.DummyMan or
+		_G.SailBoats or
+		_G.SeaBeast1 or
+		_G.PGB or
+		_G.Shark or
+		_G.Piranha or
+		_G.TerrorShark or
+		_G.MobCrew or
+		_G.HCM or
+		_G.FishBoat or
+		_G.FrozenTP or
+		_G.Leviathan1 or
+		_G.AutofindKitIs or
+		_G.Collect_Ember or
+		_G.tweenShrine or
+		_G.Prehis_Find or
+		_G.Prehis_KillGolem or
+		_G.DragoV1 or
+		_G.AutoFireFlowers or
+		_G.DragoV3 or
+		_G.Relic123 or
+		_G.TrainDrago or
+		_G.FarmBlazeEM or
+		_G.FindMirage or
+		_G.AcientOne or
+		_G.Complete_Trials or
+		_G.Defeating or
+		_G.Auto_Mink or
+		_G.Auto_Human or
+		_G.Auto_Skypiea or
+		_G.Auto_Fish or
+		_G.TwFruits or
+		_G.AutoFarmRaid or
+		_G.AutoKillOrder or
+		_G.AutoAwaken or
+		_G.TpLab or
+		_G.Teleport or
+		_G.TPNpc
+	) == true
+end
+
+function StopFarmMovement()
+	shouldTween = false
+	getgenv().OnFarm = false
+	if CurrentTween then
+		pcall(function()
+			CurrentTween:Cancel()
+		end)
+		CurrentTween = nil
+	end
+	CurrentTarget = nil
+
+	local char = plr.Character
+	if char then
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			hrp.Anchored = false
+			for _, v in pairs(hrp:GetChildren()) do
+				if v:IsA("BodyVelocity") or v:IsA("BodyPosition") or v:IsA("BodyGyro") or v.Name == "BodyClip" then
+					pcall(function() v:Destroy() end)
+				end
+			end
+			hrp.Velocity = Vector3.zero
+			hrp.RotVelocity = Vector3.zero
+			hrp.AssemblyLinearVelocity = Vector3.zero
+			hrp.AssemblyAngularVelocity = Vector3.zero
+			if C then
+				C.CFrame = hrp.CFrame
+			end
+		end
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.AutoRotate = true
+			hum.PlatformStand = false
+			hum.Sit = false
+			pcall(function()
+				hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+			end)
+		end
+		if not _G.NoClip then
+			for _, part in ipairs(char:GetDescendants()) do
+				if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+					part.CanCollide = true
+				end
+			end
+		end
+	end
 end
 
 RunSer.Stepped:Connect(function()
 	pcall(function()
-		local isMoving = shouldTween or IsAnyFarmActive() or (CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing)
-		if isMoving then
-			local char = plr.Character
-			if char then
-				local hum = char:FindFirstChildOfClass("Humanoid")
+		local isMoving = (IsAnyFarmActive() and (shouldTween or (CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing))) or _G.NoClip
+		local char = plr.Character
+		if char then
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if isMoving then
 				if hum and hum.Sit then
 					hum.Sit = false
 				end
 				for _, part in ipairs(char:GetDescendants()) do
 					if part:IsA("BasePart") then
 						part.CanCollide = false
+					end
+				end
+			else
+				if hum and hum:GetState() == Enum.HumanoidStateType.StrafingNoPhysics then
+					hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+				end
+				if not _G.NoClip then
+					for _, part in ipairs(char:GetDescendants()) do
+						if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+							part.CanCollide = true
+						end
 					end
 				end
 			end
@@ -1069,7 +1202,7 @@ end)
 
 RunSer.Heartbeat:Connect(function()
 	pcall(function()
-		local isMoving = shouldTween or IsAnyFarmActive() or (CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing)
+		local isMoving = IsAnyFarmActive() and (shouldTween or (CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing))
 		local hrp = GetHRP()
 		if not hrp then return end
 		if not C or C.Parent ~= workspace then
@@ -1099,16 +1232,30 @@ RunSer.Heartbeat:Connect(function()
 			hrp.RotVelocity = Vector3.new(0, 0, 0)
 		else
 			getgenv().OnFarm = false
+			shouldTween = false
+			if CurrentTween and not IsAnyFarmActive() then
+				pcall(function() CurrentTween:Cancel() end)
+				CurrentTween = nil
+			end
 			C.CFrame = hrp.CFrame
 			local bodyClip = hrp:FindFirstChild("BodyClip")
 			if bodyClip then
 				bodyClip:Destroy()
+			end
+			for _, v in pairs(hrp:GetChildren()) do
+				if v:IsA("BodyVelocity") and v.Name == "BodyClip" then
+					v:Destroy()
+				end
 			end
 		end
 	end)
 end)
 
 _tp = function(targetCFrame)
+	if not IsAnyFarmActive() and not shouldTween then
+		return
+	end
+
 	if typeof(targetCFrame) == "Vector3" then
 		targetCFrame = CFrame.new(targetCFrame)
 	end
@@ -1137,9 +1284,10 @@ _tp = function(targetCFrame)
 
 	if dist <= 1.5 then
 		if CurrentTween then
-			CurrentTween:Cancel()
+			pcall(function() CurrentTween:Cancel() end)
 			CurrentTween = nil
 		end
+		shouldTween = false
 		CurrentTarget = targetCFrame
 		C.CFrame = targetCFrame
 		hrp.CFrame = targetCFrame
@@ -1154,7 +1302,7 @@ _tp = function(targetCFrame)
 	end
 
 	if CurrentTween then
-		CurrentTween:Cancel()
+		pcall(function() CurrentTween:Cancel() end)
 		CurrentTween = nil
 	end
 
@@ -1175,12 +1323,13 @@ _tp = function(targetCFrame)
 		CurrentTween = tw
 		tw:Play()
 		tw.Completed:Connect(function(status)
-			if status == Enum.PlaybackState.Completed then
-				if CurrentTarget == targetCFrame then
-					CurrentTween = nil
-				end
+			if CurrentTween == tw then
+				CurrentTween = nil
 			end
+			shouldTween = false
 		end)
+	else
+		shouldTween = false
 	end
 end
 
@@ -3282,6 +3431,8 @@ sec_v2_1:AddToggle("Toggle_6", {
             elseif _G.SelectedFarmMode == "Tyrant Of The Skies" then
                 _G.AutoTyrant = true
             end
+        else
+            StopFarmMovement()
         end
 
         _G.SaveData["StartFarm_Save"] = v
@@ -3788,6 +3939,7 @@ sec_v2_2:AddToggle("Toggle_8", {
         _G.SaveData["AutoFarmNear_Save"] = I
 
         SaveSettings()
+        if not I then StopFarmMovement() end
     end,
 })
 
@@ -3858,6 +4010,7 @@ sec_v2_2:AddToggle("Toggle_9", {
         _G.SaveData["AutoFactory_Save"] = Value
 
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end,
 })
 
@@ -3906,6 +4059,7 @@ sec_v2_2:AddToggle("Toggle_10", {
         _G.SaveData["AutoRaidCastle_Save"] = I
 
         SaveSettings()
+        if not I then StopFarmMovement() end
     end,
 })
 
@@ -3978,6 +4132,7 @@ sec_v2_3:AddToggle("Toggle_11", {
         _G.SaveData["AutoFarmChest_Save"] = I
 
         SaveSettings()
+        if not I then StopFarmMovement() end
     end,
 })
 
@@ -3991,6 +4146,7 @@ sec_v2_3:AddToggle("Toggle_12", {
         _G.SaveData["AutoBerry_Save"] = I
 
         SaveSettings()
+        if not I then StopFarmMovement() end
 	end,
 });
 
@@ -4074,6 +4230,7 @@ sec_v2_4:AddToggle("Toggle_13", {
 
         _G.SaveData["AutoMaterial_Save"] = I
         SaveSettings()
+        if not I then StopFarmMovement() end
 	end,
 })
 
@@ -4125,6 +4282,7 @@ sec_v2_5:AddToggle("Toggle_14", {
     Default = false,
     Callback = function(Value)
         _G.Rdbone = Value
+        if not Value then StopFarmMovement() end
     end,
 })
 
@@ -4141,6 +4299,7 @@ sec_v2_5:AddToggle("Toggle_15", {
     Default = false,
     Callback = function(v)
         _G.AutoHytHallow = v
+        if not v then StopFarmMovement() end
     end,
 })
 
@@ -4179,6 +4338,7 @@ sec_v2_5:AddToggle("Toggle_16", {
     Default = false,
     Callback = function(v)
         _G.Pray = v
+        if not v then StopFarmMovement() end
     end
 })
 
@@ -4211,6 +4371,7 @@ sec_v2_5:AddToggle("Toggle_17", {
     Default = false,
     Callback = function(v)
         _G.Trylux = v
+        if not v then StopFarmMovement() end
     end
 })
 
@@ -4313,6 +4474,7 @@ sec_v2_6:AddToggle("Toggle_18", {
         if v then _G.FarmAllBoss = false end
         _G.SaveData["AutoBoss_Save"] = v
         SaveSettings()
+        if not v then StopFarmMovement() end
     end
 })
 
@@ -4335,6 +4497,7 @@ sec_v2_6:AddToggle("Toggle_20", {
         _G.CurrentTargetBoss = nil
         _G.SaveData["FarmAllBosses_Save"] = v
         SaveSettings()
+        if not v then StopFarmMovement() end
     end
 })
 
@@ -4521,6 +4684,7 @@ sec_v2_7:AddToggle("Toggle_21", {
         _G.FarmMastery_Dev = I
         _G.SaveData["FarmMastery_Dev_Save"] = I
         SaveSettings()
+        if not I then StopFarmMovement() end
     end
 })
 
@@ -4616,6 +4780,7 @@ sec_v2_7:AddToggle("Toggle_27", {
         _G.FarmMastery_G = I
         _G.SaveData["FarmMastery_G_Save"] = I
         SaveSettings()
+        if not I then StopFarmMovement() end
     end
 })
 
@@ -4697,6 +4862,7 @@ sec_v2_7:AddToggle("Toggle_28", {
         _G.FarmMastery_S = I
         _G.SaveData["FarmMastery_S_Save"] = I
         SaveSettings()
+        if not I then StopFarmMovement() end
     end
 })
 
@@ -5159,6 +5325,7 @@ sec_v5_1:AddToggle("Toggle_39", {
         _G.AutoFishing = Value
         _G.SaveData["Fish_AutoFishing"] = Value
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -5239,6 +5406,7 @@ if World1 then
             _G.TravelDres = Value
             _G.SaveData["TravelDres_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -5297,6 +5465,7 @@ if World2 then
             _G.AutoZou = Value
             _G.SaveData["AutoZou_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -5502,6 +5671,7 @@ sec_v3_3:AddToggle("Toggle_46", {
         _G.obsFarm = I
         _G.SaveData["AutoObsFarm_Save"] = I
         SaveSettings()
+        if not I then StopFarmMovement() end
     end,
 })
 
@@ -5572,6 +5742,7 @@ if World3 then
             _G.AutoKenVTWO = I
             _G.SaveData["AutoKenV2_Save"] = I
             SaveSettings()
+        if not I then StopFarmMovement() end
         end,
     })
 
@@ -5970,6 +6141,7 @@ if World2 then
             _G.AutoTridentW2 = Value
             _G.SaveData["AutoTridentW2_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6000,6 +6172,7 @@ if World1 then
             _G.AutoSaw = Value
             _G.SaveData["AutoSaw_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6030,6 +6203,7 @@ if World2 then
             _G.SwanCoat = Value
             _G.SaveData["SwanCoat_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6060,6 +6234,7 @@ if World1 then
             _G.MarinesCoat = Value
             _G.SaveData["MarinesCoat_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6090,6 +6265,7 @@ if World1 then
             _G.WardenBoss = Value
             _G.SaveData["WardenBoss_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6120,6 +6296,7 @@ if World1 then
             _G.AutoColShad = Value
             _G.SaveData["AutoColShad_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6150,6 +6327,7 @@ if World2 then
             _G.AutoEcBoss = Value
             _G.SaveData["AutoEcBoss_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6189,6 +6367,7 @@ if World2 then
             _G.IceBossRen = Value
             _G.SaveData["IceBossRen_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6217,6 +6396,7 @@ if World2 then
             _G.KeysRen = Value
             _G.SaveData["KeysRen_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6254,6 +6434,7 @@ if World2 or World3 then
             _G.AutoPoleV2 = Value
             _G.SaveData["AutoPoleV2_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6307,6 +6488,7 @@ if World1 then
             _G.Greybeard = Value
             _G.SaveData["Greybeard_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6341,6 +6523,7 @@ if World3 then
             _G.Auto_Soul_Guitar = Value
             _G.SaveData["Auto_Soul_Guitar_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6398,6 +6581,7 @@ if World3 then
             _G.CDK_YM = Value
             _G.SaveData["CDK_YM_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6418,6 +6602,7 @@ if World3 then
             _G.CDK = Value
             _G.SaveData["CDK_Boss_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6500,6 +6685,7 @@ if World2 then
             _G.Auto_SwanGG = Value
             _G.SaveData["Auto_SwanGG_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6530,6 +6716,7 @@ if World3 then
             _G.Auto_Cavender = Value
             _G.SaveData["Auto_Cavender_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6560,6 +6747,7 @@ if World3 then
             _G.AutoBigmom = Value
             _G.SaveData["AutoBigmom_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6590,6 +6778,7 @@ if World3 then
             _G.DummyMan = Value
             _G.SaveData["DummyMan_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6836,6 +7025,7 @@ sec_v6_2:AddToggle("Toggle_80", {
         Default = false,
         Callback = function(Value)
             _G.SeaBeast1 = Value
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6844,6 +7034,7 @@ sec_v6_2:AddToggle("Toggle_81", {
     Default = false,
     Callback = function(Value)
         _G.PGB = Value
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -6859,6 +7050,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         Default = false,
         Callback = function(Value)
             _G.Shark = Value
+        if not Value then StopFarmMovement() end
         end
     })
     sec_v6_2:AddToggle("Toggle_83", {
@@ -6866,6 +7058,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         Default = false,
         Callback = function(Value)
             _G.Piranha = Value
+        if not Value then StopFarmMovement() end
         end
     })
     sec_v6_2:AddToggle("Toggle_84", {
@@ -6873,6 +7066,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         Default = false,
         Callback = function(Value)
             _G.TerrorShark = Value
+        if not Value then StopFarmMovement() end
         end
     })
     sec_v6_2:AddToggle("Toggle_85", {
@@ -6880,6 +7074,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         Default = false,
         Callback = function(Value)
             _G.MobCrew = Value
+        if not Value then StopFarmMovement() end
         end
     })
     sec_v6_2:AddToggle("Toggle_86", {
@@ -6887,6 +7082,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         Default = false,
         Callback = function(Value)
             _G.HCM = Value
+        if not Value then StopFarmMovement() end
         end
     })
     sec_v6_2:AddToggle("Toggle_87", {
@@ -6894,6 +7090,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         Default = false,
         Callback = function(Value)
             _G.FishBoat = Value
+        if not Value then StopFarmMovement() end
         end
     })
 end
@@ -6915,6 +7112,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
             _G.FrozenTP = Value
             _G.SaveData["FrozenTP_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6936,6 +7134,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
         Default = false,
         Callback = function(Value)
             _G.Leviathan1 = Value
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -6948,6 +7147,7 @@ if game.PlaceId == 7449423635 or game.PlaceId == 100117331123089 then
             _G.AutofindKitIs = Value
             _G.SaveData["FindKitsune_Save"] = Value
             SaveSettings()
+        if not Value then StopFarmMovement() end
         end
     })
 
@@ -7409,6 +7609,7 @@ sec_v7_3:AddToggle("Toggle_118", {
         _G.Prehis_Find = Value
         _G.SaveData["Prehis_Find_Save"] = Value
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -8191,6 +8392,7 @@ sec_v8_2:AddToggle("Toggle_137", {
         _G.FindMirage = Value
         _G.SaveData["FindMirage_Save"] = Value
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -8529,6 +8731,7 @@ sec_v8_5:AddToggle("Toggle_145", {
         _G.Lver = Value
         _G.SaveData["Lver_Save"] = Value
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -8789,6 +8992,7 @@ sec_v8_7:AddToggle("Toggle_152", {
         _G.Auto_Mink = Value
         _G.SaveData["Auto_Mink_Save"] = Value
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -8799,6 +9003,7 @@ sec_v8_7:AddToggle("Toggle_153", {
         _G.Auto_Human = Value
         _G.SaveData["Auto_Human_Save"] = Value
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -8809,6 +9014,7 @@ sec_v8_7:AddToggle("Toggle_154", {
         _G.Auto_Skypiea = Value
         _G.SaveData["Auto_Skypiea_Save"] = Value
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -8819,6 +9025,7 @@ sec_v8_7:AddToggle("Toggle_155", {
         _G.Auto_Fish = Value
         _G.SaveData["Auto_Fish_Save"] = Value
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -9157,6 +9364,7 @@ sec_v9_2:AddToggle("Toggle_159", {
         _G.TwFruits = Value
         _G.SaveData["TwFruits_Save"] = Value
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -9657,6 +9865,7 @@ sec_v10_5:AddToggle("Toggle_167", {
         _G.AutoDungeonFarm = Value
         _G.SaveData["Raid_AutoDungeonFarm"] = Value
         if not Value then CurrentTargetIsland = nil end
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -9866,6 +10075,7 @@ sec_v10_8:AddToggle("Toggle_171", {
         _G.AutoKillOrder = Value
         _G.SaveData["Raid_AutoKillOrder"] = Value
         SaveSettings()
+        if not Value then StopFarmMovement() end
     end
 })
 
@@ -10079,6 +10289,7 @@ sec_v11_2:AddToggle("Toggle_174", {
                 end
             end)
         end
+        if not Value then StopFarmMovement() end
     end,
 })
 
@@ -10158,6 +10369,7 @@ sec_v11_4:AddToggle("Toggle_175", {
         _G.TPNpc = I
         _G.SaveData["AutoTPNPC_Save"] = I
         SaveSettings()
+        if not I then StopFarmMovement() end
     end,
 })
 
