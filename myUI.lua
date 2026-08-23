@@ -362,31 +362,6 @@ local O = workspace:FindFirstChild("Rocks");
 if O then
 	O:Destroy();
 end;
-gay = (function()
-    local I = game:GetService("Lighting");
-    local e = I:FindFirstChild("LightingLayers");
-
-    local K = workspace._WorldOrigin["Foam;"];
-    if K and workspace._WorldOrigin["Foam;"] then
-        K:Destroy();
-    end;
-end)();
-
-local G = {};
-G.__index = G;
-G.Alive = function(I)
-		if not I then
-			return;
-		end;
-		local e = I:FindFirstChild("Humanoid");
-		return e and e.Health > 0;
-	end;
-G.Pos = function(I, e)
-		return (Root.Position - mode.Position).Magnitude <= e;
-	end;
-G.Dist = function(I, e)
-		return (Root.Position - (I:FindFirstChild("HumanoidRootPart")).Position).Magnitude <= e;
-	end;
 G.DistH = function(I, e)
     return (Root.Position - (I:FindFirstChild("HumanoidRootPart")).Position).Magnitude > e
 end
@@ -395,12 +370,9 @@ _G.MobHeight = _G.MobHeight or 20
 
 local function FaceTarget(targetPos)
     local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp or not targetPos then return end
-    local diff = targetPos - hrp.Position
-    local dirXZ = Vector3.new(diff.X, 0, diff.Z)
-    if dirXZ.Magnitude > 0.01 then
-        hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + dirXZ.Unit)
-    end
+    if not hrp then return end
+    local dir = (targetPos - hrp.Position).Unit
+    hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(dir.X, 0, dir.Z))
 end
 
 local function PerformAttack(targetHRP)
@@ -412,7 +384,8 @@ local function PerformAttack(targetHRP)
 
     local tool = char:FindFirstChildOfClass("Tool")
     if not tool then
-        tool = EquipWeapon(_G.ChooseWP or _G.SelectWeapon or "Melee")
+        EquipWeapon(_G.SelectWeapon or "Melee")
+        tool = char:FindFirstChildOfClass("Tool")
     end
     if not tool then return end
 
@@ -437,6 +410,14 @@ local function PerformAttack(targetHRP)
                 end
             end
         end)
+
+        pcall(function()
+            if vim2 then
+                local pos = targetHRP.Position
+                local vp = workspace.CurrentCamera:WorldToScreenPoint(pos)
+                vim2:ClickButton1(Vector2.new(vp.X, vp.Y))
+            end
+        end)
     end
 end
 
@@ -455,9 +436,9 @@ G.Kill = function(mob, active)
     PosMon = (mob:GetAttribute("Locked")).Position
 
     _B = true
-    BringEnemy(mob.Name)
+    BringEnemy()
 
-    EquipWeapon(_G.ChooseWP or _G.SelectWeapon or "Melee")
+    EquipWeapon(_G.SelectWeapon)
 
     local attackCFrame = hrp.CFrame * CFrame.new(0, _G.MobHeight, 0)
 
@@ -471,6 +452,7 @@ G.Kill = function(mob, active)
     task.wait(0.05)
     PerformAttack(hrp)
 end
+
 
 G.Kill2 = function(I, e)
     if not (I and e) then return end
@@ -1126,7 +1108,7 @@ function stopTween()
         local hrp = char:FindFirstChild("HumanoidRootPart")
         if hrp then
             for _, child in ipairs(hrp:GetChildren()) do
-                if child.Name == "FarmBV" or child.Name == "FarmBG" or child.Name == "BodyClip" or child:IsA("BodyVelocity") or child:IsA("BodyGyro") then
+                if child.Name == "FarmBV" or child.Name == "BodyClip" or child:IsA("BodyVelocity") or child:IsA("BodyGyro") then
                     child:Destroy()
                 end
             end
@@ -1168,18 +1150,6 @@ Services.RunService.Stepped:Connect(function()
                     bv.Parent = hrp
                 end
 
-                local bg = hrp:FindFirstChild("FarmBG")
-                if not bg then
-                    bg = Instance.new("BodyGyro")
-                    bg.Name = "FarmBG"
-                    bg.MaxTorque = Vector3.new(9e5, 9e5, 9e5)
-                    bg.P = 9e4
-                    bg.CFrame = hrp.CFrame
-                    bg.Parent = hrp
-                else
-                    bg.CFrame = hrp.CFrame
-                end
-
                 if shouldTween then
                     bv.MaxForce = Vector3.zero
                     hrp.Velocity = Vector3.zero
@@ -1189,11 +1159,6 @@ Services.RunService.Stepped:Connect(function()
                     bv.Velocity = Vector3.zero
                 end
             end
-            local hum = char:FindFirstChild("Humanoid")
-            if hum then
-                hum.Sit = false
-                hum.PlatformStand = false
-            end
         end
     else
         local char = plr.Character
@@ -1202,8 +1167,6 @@ Services.RunService.Stepped:Connect(function()
             if hrp then
                 local bv = hrp:FindFirstChild("FarmBV")
                 if bv then bv:Destroy() end
-                local bg = hrp:FindFirstChild("FarmBG")
-                if bg then bg:Destroy() end
                 local oldBv = hrp:FindFirstChild("BodyClip")
                 if oldBv then oldBv:Destroy() end
             end
