@@ -1095,16 +1095,54 @@ Hop = function()
 		end);
 	end;
 -- ============================================================
+-- ============================================================
 -- UNIFIED SMOOTH TWEEN & MOVEMENT SYSTEM
 -- ============================================================
 local currentTween = nil
-getgenv().TweenSpeed = 300
+local currentTargetPos = nil
+getgenv().TweenSpeed = 350
 getgenv().OnFarm = false
 shouldTween = false
 
--- Noclip & Anti-Fall Loop (smooth, no stutter)
+function stopTween()
+    if currentTween then
+        currentTween:Cancel()
+        currentTween = nil
+    end
+    currentTargetPos = nil
+    shouldTween = false
+    getgenv().OnFarm = false
+
+    local char = plr.Character
+    if char then
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            for _, child in ipairs(hrp:GetChildren()) do
+                if child.Name == "FarmBV" or child.Name == "BodyClip" or child:IsA("BodyVelocity") or child:IsA("BodyGyro") then
+                    child:Destroy()
+                end
+            end
+            hrp.Velocity = Vector3.zero
+            hrp.RotVelocity = Vector3.zero
+        end
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and not part.CanCollide then
+                part.CanCollide = true
+            end
+        end
+        local hum = char:FindFirstChild("Humanoid")
+        if hum then
+            hum.PlatformStand = false
+            hum.Sit = false
+            hum:ChangeState(Enum.HumanoidStateType.Freefall)
+        end
+    end
+end
+
+-- Noclip & Anti-Fall Loop (smooth, clean reset)
 Services.RunService.Stepped:Connect(function()
-    if shouldTween or _G.StartFarm or getgenv().OnFarm then
+    local isFarming = _G.StartFarm or _G.AutoFarm_Bone or _G.AutoFarm_Cake or _G.AutoTyrant or _G.AutoFarmNear or _G.AutoFarmChest
+    if shouldTween or isFarming then
         local char = plr.Character
         if char then
             for _, part in ipairs(char:GetDescendants()) do
@@ -1118,7 +1156,7 @@ Services.RunService.Stepped:Connect(function()
                 if not bv then
                     bv = Instance.new("BodyVelocity")
                     bv.Name = "FarmBV"
-                    bv.MaxForce = Vector3.new(0, 50000, 0)
+                    bv.MaxForce = Vector3.new(9e5, 9e5, 9e5)
                     bv.Velocity = Vector3.zero
                     bv.Parent = hrp
                 end
@@ -1151,26 +1189,34 @@ _tp = function(targetCFrame)
 
     local dist = (targetCFrame.Position - hrp.Position).Magnitude
 
-    -- Short distance -> Instant positioning (smooth, zero tween overhead)
-    if dist <= 25 then
+    -- Jarak dekat: instant CFrame (tanpa jeda, sangat responsif)
+    if dist <= 30 then
         if currentTween then
             currentTween:Cancel()
             currentTween = nil
         end
+        currentTargetPos = nil
         hrp.CFrame = targetCFrame
         getgenv().OnFarm = true
+        shouldTween = false
         return
     end
 
-    -- Long distance -> Smooth Linear Tween
+    -- Jika sedang terbang menuju target yang sama, biarkan terbang mulus tanpa restart
+    if currentTween and currentTargetPos and (targetCFrame.Position - currentTargetPos).Magnitude <= 15 then
+        return
+    end
+
+    -- Jarak jauh: Smooth Linear Tween kecepatan tinggi
     shouldTween = true
     getgenv().OnFarm = false
+    currentTargetPos = targetCFrame.Position
 
     if char:FindFirstChild("Humanoid") and char.Humanoid.Sit then
         char.Humanoid.Sit = false
     end
 
-    local speed = getgenv().TweenSpeed or 300
+    local speed = 350
     local tweenTime = dist / speed
     local info = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear)
 
@@ -1187,18 +1233,11 @@ _tp = function(targetCFrame)
         tween.Completed:Wait()
         if currentTween == tween then
             currentTween = nil
+            currentTargetPos = nil
             getgenv().OnFarm = true
             shouldTween = false
         end
     end)
-end
-
-function stopTween()
-    if currentTween then
-        currentTween:Cancel()
-        currentTween = nil
-    end
-    shouldTween = false
 end
 
 TeleportToTarget = function(I)
@@ -3310,6 +3349,9 @@ v2:AddToggle("StartFarm", {
             elseif _G.SelectedFarmMode == "Tyrant Of The Skies" then
                 _G.AutoTyrant = true
             end
+        else
+            stopTween()
+            _B = false
         end
 
         _G.SaveData["StartFarm_Save"] = v
@@ -3813,6 +3855,10 @@ v2:AddToggle("KillMobsNearest", {
     Default = GetSetting("AutoFarmNear_Save", false),
     Callback = function(I)
         _G.AutoFarmNear = I
+        if not I then
+            stopTween()
+            _B = false
+        end
 
         _G.SaveData["AutoFarmNear_Save"] = I
 
@@ -3821,7 +3867,7 @@ v2:AddToggle("KillMobsNearest", {
 })
 
 spawn(function()
-    while task.wait() do
+    while task.wait(0.1) do
         pcall(function()
             if not _G.AutoFarmNear then return end
 
@@ -4003,6 +4049,9 @@ v2:AddToggle("AutoCollectChest", {
     Default = GetSetting("AutoFarmChest_Save", false),
     Callback = function(I)
         _G.AutoFarmChest = I
+        if not I then
+            stopTween()
+        end
 
         _G.SaveData["AutoFarmChest_Save"] = I
 
@@ -4016,6 +4065,9 @@ v2:AddToggle("AutoCollectBerry", {
 	Default = GetSetting("AutoBerry_Save", false),
 	Callback = function(I)
 		_G.AutoBerry = I
+        if not I then
+            stopTween()
+        end
 
         _G.SaveData["AutoBerry_Save"] = I
 
@@ -4339,7 +4391,11 @@ v2:AddToggle("AutoFarmBossSelect", {
     Default = GetSetting("AutoBoss_Save", false),
     Callback = function(v)
         _G.AutoBoss = v
-        if v then _G.FarmAllBoss = false end
+        if v then
+            _G.FarmAllBoss = false
+        else
+            stopTween()
+        end
         _G.SaveData["AutoBoss_Save"] = v
         SaveSettings()
     end
@@ -4360,7 +4416,11 @@ v2:AddToggle("FarmAllBosses", {
     Default = GetSetting("FarmAllBosses_Save", false),
     Callback = function(v)
         _G.FarmAllBoss = v
-        if v then _G.AutoBoss = false end
+        if v then
+            _G.AutoBoss = false
+        else
+            stopTween()
+        end
         _G.CurrentTargetBoss = nil
         _G.SaveData["FarmAllBosses_Save"] = v
         SaveSettings()
@@ -4548,6 +4608,10 @@ v2:AddToggle("AutoFarmMasteryFruit", {
     Default = GetSetting("FarmMastery_Dev_Save", false),
     Callback = function(I)
         _G.FarmMastery_Dev = I
+        if not I then
+            stopTween()
+            _B = false
+        end
         _G.SaveData["FarmMastery_Dev_Save"] = I
         SaveSettings()
     end
@@ -4643,6 +4707,10 @@ v2:AddToggle("AutoFarmMasteryGun", {
     Default = GetSetting("FarmMastery_G_Save", false),
     Callback = function(I)
         _G.FarmMastery_G = I
+        if not I then
+            stopTween()
+            _B = false
+        end
         _G.SaveData["FarmMastery_G_Save"] = I
         SaveSettings()
     end
@@ -4724,6 +4792,10 @@ v2:AddToggle("AutoFarmMasteryAllSword", {
     Default = GetSetting("FarmMastery_S_Save", false),
     Callback = function(I)
         _G.FarmMastery_S = I
+        if not I then
+            stopTween()
+            _B = false
+        end
         _G.SaveData["FarmMastery_S_Save"] = I
         SaveSettings()
     end
@@ -4942,17 +5014,6 @@ v4:AddInput("SelectFarmHeight", {
     end
 })
 
-v4:AddInput("TweenSpeed", {
-    Finished = true,
-    Title = "Tween Speed",
-    Placeholder = "300",
-    Default = "300",
-    Callback = function(I)
-        if tonumber(I) then
-            getgenv().TweenSpeedFar = tonumber(I)
-        end
-    end,
-});
 
 _G.AutoHopAdmin = _G.AutoHopAdmin or false
 local AdminNames = {
