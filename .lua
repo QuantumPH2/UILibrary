@@ -1,4 +1,4 @@
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/QuantumPH2/UI/refs/heads/main/NewEraUI.lua"))()
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/CloudyPH2/UI/refs/heads/main/NewEraUI.lua"))()
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local TeleportService = game:GetService("TeleportService")
@@ -269,30 +269,11 @@ local function loadRemotes()
         if remote then loaded = loaded + 1
         else failed = failed + 1; warn("[QH] Remote gagal: " .. remoteName) end
     end
-
     Events.UpdateAutoFishing = Events.update_auto_fishing or GetServerRemote("RF/UpdateAutoFishingState")
     Events.equip = Events.equip_tool_remote or GetServerRemote("RF/EquipToolFromHotbar")
-    Events.equipToolRemote = Events.equip_tool_remote
+    Events.equipToolRemote = Events.equip_tool_remote or GetServerRemote("RF/EquipToolFromHotbar")
     Events.equipItemRemote = Events.equip_item or GetServerRemote("RF/EquipItem")
-    Events.equipItem = Events.equip_item
-    Events.unequip = Events.un_equip_tool or GetServerRemote("RF/UnequipToolFromHotbar")
-    Events.favorite = Events.favorite_item or GetServerRemote("RF/FavoriteItem")
-
-    setmetatable(Events, {
-        __index = function(t, key)
-            if type(key) ~= "string" then return nil end
-            local normalized = key:lower():gsub("[%s_%-]+", "")
-            for k, v in pairs(t) do
-                if type(k) == "string" and k:lower():gsub("[%s_%-]+", "") == normalized then
-                    return v
-                end
-            end
-            local r = GetServerRemote("RF/" .. key) or GetServerRemote("RE/" .. key) or GetServerRemote(key)
-            if r then rawset(t, key, r) end
-            return r
-        end
-    })
-
+    Events.cancel_fishing_input = Events.cancel_fishing_input or GetServerRemote("RF/CancelFishingInputs")
     print("[QH] Loaded: " .. loaded .. " | Failed: " .. failed)
     return loaded, failed
 end
@@ -871,14 +852,81 @@ local function interactPirateChest(chest, savedCFrame)
     return success
 end
 
+local function ensureRodEquipped()
+    local lp = Players.LocalPlayer
+    local char = lp and lp.Character
+    if not char then return false end
+
+    local held = char:FindFirstChildOfClass("Tool")
+    if held then return true end
+
+    -- 1. Check Backpack
+    local bp = lp:FindFirstChild("Backpack")
+    if bp then
+        local tool = bp:FindFirstChildOfClass("Tool")
+        if tool and char:FindFirstChild("Humanoid") then
+            pcall(function() char.Humanoid:EquipTool(tool) end)
+            task.wait(0.05)
+            if char:FindFirstChildOfClass("Tool") then return true end
+        end
+    end
+
+    -- 2. Call Hotbar equip remote
+    local eq = Events.equip or Events.equipToolRemote or Events.equip_tool_remote or (Config.UB and Config.UB.Remotes and Config.UB.Remotes.equip) or GetServerRemote("RF/EquipToolFromHotbar")
+    if eq then
+        pcall(function() CallRemote(eq, 1) end)
+        task.wait(0.08)
+        if char:FindFirstChildOfClass("Tool") then return true end
+    end
+
+    -- 3. If still not holding, equip best rod from Replion Inventory
+    pcall(function()
+        local replion = GetPlayerDataReplion and GetPlayerDataReplion()
+        if replion then
+            local ok, inv = pcall(function() return replion:GetExpect("Inventory") end)
+            if ok and inv and inv["Fishing Rods"] and #inv["Fishing Rods"] > 0 then
+                local priority = {257, 169, 126, 5, 7, 6, 80, 4, 78, 77, 85, 76, 79, 1}
+                local bestRod = nil
+                for _, id in ipairs(priority) do
+                    for _, r in ipairs(inv["Fishing Rods"]) do
+                        if tonumber(r.Id) == id then bestRod = r; break end
+                    end
+                    if bestRod then break end
+                end
+                if not bestRod then bestRod = inv["Fishing Rods"][1] end
+
+                local equipItem = Events.equipItemRemote or Events.equip_item or GetServerRemote("RF/EquipItem")
+                if bestRod and bestRod.UUID and equipItem then
+                    CallRemote(equipItem, bestRod.UUID, "Fishing Rods")
+                    task.wait(0.1)
+                    if eq then CallRemote(eq, 1) end
+                end
+            end
+        end
+    end)
+
+    return char:FindFirstChildOfClass("Tool") ~= nil
+end
+
 local function equipRod()
-    task.wait(0.05)
-    pcall(function() if Events.equip then CallRemote(Events.equip, 1) end end)
-    task.wait(0.05)
+    ensureRodEquipped()
     if Config.autoFishing or Config.AutoCatch or Config.PerfectionEnchant then
-        pcall(function() if Events.UpdateAutoFishing then CallRemote(Events.UpdateAutoFishing, true) end end)
+        pcall(function()
+            local r = Events.UpdateAutoFishing or Events.update_auto_fishing or (Config.UB and Config.UB.Remotes and Config.UB.Remotes.UpdateAutoFishing) or GetServerRemote("RF/UpdateAutoFishingState")
+            if r then CallRemote(r, true) end
+        end)
     end
 end
+
+pcall(function()
+    LocalPlayer.CharacterAdded:Connect(function(newChar)
+        task.wait(0.5)
+        local isAnyFishingActive = Config.AutoCatch or (Config.UB and Config.UB.Active) or (Config.CloudyV1 and Config.CloudyV1.Active) or (Config.Cloudy1N and Config.Cloudy1N.Active) or (Config.InstantFishing and Config.InstantFishing.Active) or (Config.InstantV2 and Config.InstantV2.Active) or (_G.Kaitun and _G.Kaitun.Active)
+        if isAnyFishingActive then
+            equipRod()
+        end
+    end)
+end)
 
 local function safeFire(func)
     task.spawn(function()
@@ -1483,31 +1531,30 @@ end
 
 local function CompleteFishing(quality)
     local q = quality or Config.CatchQuality or "Perfect"
-    local re = Config.UB.Remotes.FishingCompletedRE
-    local rf = Config.UB.Remotes.FishingCompleted
-    if re and re.Parent then
-        pcall(re.FireServer, re, q)
-    elseif rf and rf.Parent then
-        task.spawn(function() pcall(rf.InvokeServer, rf, q) end)
+    if Config.UB.Remotes.FishingCompletedRE and Config.UB.Remotes.FishingCompletedRE.Parent then
+        pcall(function() Config.UB.Remotes.FishingCompletedRE:FireServer(q) end)
+    elseif Config.UB.Remotes.FishingCompleted and Config.UB.Remotes.FishingCompleted.Parent then
+        pcall(function() Config.UB.Remotes.FishingCompleted:InvokeServer(q) end)
     end
 end
 
 local function legit_fishing_loop()
-    local remotes = Config.UB.Remotes
-    local charge = remotes.ChargeFishingRod or Events.charge_rod_remote or GetServerRemote("RF/ChargeFishingRod")
-    local reqMinigame = remotes.RequestMinigame or Events.minigame_remote or GetServerRemote("RF/RequestFishingMinigameStarted")
-    local completedRE = remotes.FishingCompletedRE or Events.finish_remote or GetServerRemote("RE/CatchFishCompleted")
-    local completedRF = remotes.FishingCompleted or GetServerRemote("RF/CatchFishCompleted")
+    UB_init()
+    local charge = (Config.UB and Config.UB.Remotes and Config.UB.Remotes.ChargeFishingRod) or GetServerRemote("RF/ChargeFishingRod")
+    local reqMinigame = (Config.UB and Config.UB.Remotes and Config.UB.Remotes.RequestMinigame) or GetServerRemote("RF/RequestFishingMinigameStarted")
+    local completedRE = (Config.UB and Config.UB.Remotes and Config.UB.Remotes.FishingCompletedRE) or GetServerRemote("RE/CatchFishCompleted")
+    local completedRF = (Config.UB and Config.UB.Remotes and Config.UB.Remotes.FishingCompleted) or GetServerRemote("RF/CatchFishCompleted")
 
     while Config.AutoCatch do
         local ok, err = pcall(function()
+            ensureRodEquipped()
             local currentTime = tick()
             if charge and charge.Parent then
-                task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
+                pcall(function() charge:InvokeServer({[1] = currentTime}) end)
             end
             local qualityParam = 1
             if reqMinigame and reqMinigame.Parent then
-                task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
+                pcall(function() reqMinigame:InvokeServer(1, qualityParam, currentTime) end)
             end
 
             local catchDelay = math.clamp(Config.CatchDelay or 0.7, 0.05, 10)
@@ -1519,156 +1566,135 @@ local function legit_fishing_loop()
             if completedRE and completedRE.Parent then
                 pcall(completedRE.FireServer, completedRE, q)
             elseif completedRF and completedRF.Parent then
-                task.spawn(function() pcall(completedRF.InvokeServer, completedRF, q) end)
+                pcall(completedRF.InvokeServer, completedRF, q)
             end
 
             task.wait(0.35)
         end)
-        if not ok then warn("[QH] Legit Fishing error: " .. tostring(err)); task.wait(0.1) end
+        if not ok then task.wait(0.1) end
     end
 end
 
 local function onToggleLegitFishing(val)
     Config.AutoCatch = val
+    Config.autoFishing = val
     if val then
-        if Config.UB and Config.UB.Active then onToggleUB(false) end
-        if Config.amblatant then onToggleYTTA(false) end
-        if Config.CloudyV1 and Config.CloudyV1.Active then onToggleCloudyV1(false) end
-        if Config.Cloudy1N and Config.Cloudy1N.Active then onToggleCloudy1N(false) end
-        if Config.InstantFishing and Config.InstantFishing.Active then Config.InstantFishing.Active = false end
-        if Config.InstantV2 and Config.InstantV2.Active then stopInstantV2() end
-
         equipRod()
-        task.wait(0.2)
+        task.wait(0.1)
         pcall(function()
-            local r = Events.UpdateAutoFishing or Config.UB.Remotes.UpdateAutoFishing
+            local r = Events.UpdateAutoFishing or Events.update_auto_fishing or (Config.UB and Config.UB.Remotes and Config.UB.Remotes.UpdateAutoFishing) or GetServerRemote("RF/UpdateAutoFishingState")
             if r then
                 if r:IsA("RemoteFunction") then task.spawn(function() pcall(r.InvokeServer, r, true) end)
                 elseif r:IsA("RemoteEvent") then r:FireServer(true) end
             end
         end)
-        if Tasks.legitFishingTask then pcall(task.cancel, Tasks.legitFishingTask); Tasks.legitFishingTask = nil end
+        pcall(function()
+            local m = GetServerRemote("RF/MarkAutoFishingUsed") or GetServerRemote("RE/MarkAutoFishingUsed")
+            if m then
+                if m:IsA("RemoteFunction") then task.spawn(function() pcall(m.InvokeServer, m) end)
+                elseif m:IsA("RemoteEvent") then m:FireServer(m) end
+            end
+        end)
+        pcall(function()
+            if Controllers.Fishing then
+                if Controllers.Fishing.ToggleAutoFishing then Controllers.Fishing:ToggleAutoFishing(true)
+                elseif Controllers.Fishing.StartAutoFishing then Controllers.Fishing:StartAutoFishing()
+                elseif Controllers.Fishing.SetAutoFishing then Controllers.Fishing:SetAutoFishing(true) end
+            end
+        end)
+        if Tasks.legitFishingTask then
+            pcall(task.cancel, Tasks.legitFishingTask)
+            Tasks.legitFishingTask = nil
+        end
         Tasks.legitFishingTask = task.spawn(legit_fishing_loop)
-        NotifySuccess("Legit Fishing", "Aktif! Catch Delay: " .. tostring(Config.CatchDelay or 0.7) .. "s")
+        NotifySuccess("Legit Fishing", "Auto Fishing diaktifkan! Catch Delay: " .. tostring(Config.CatchDelay or 0.7) .. "s")
     else
         Config.AutoCatch = false
+        Config.autoFishing = false
         if Tasks.legitFishingTask then
             pcall(task.cancel, Tasks.legitFishingTask)
             Tasks.legitFishingTask = nil
         end
         pcall(function()
-            local r = Events.UpdateAutoFishing or Config.UB.Remotes.UpdateAutoFishing
+            local r = Events.UpdateAutoFishing or Events.update_auto_fishing or (Config.UB and Config.UB.Remotes and Config.UB.Remotes.UpdateAutoFishing) or GetServerRemote("RF/UpdateAutoFishingState")
             if r then
                 if r:IsA("RemoteFunction") then task.spawn(function() pcall(r.InvokeServer, r, false) end)
                 elseif r:IsA("RemoteEvent") then r:FireServer(false) end
             end
         end)
+        pcall(function()
+            if Controllers.Fishing then
+                if Controllers.Fishing.ToggleAutoFishing then Controllers.Fishing:ToggleAutoFishing(false)
+                elseif Controllers.Fishing.StopAutoFishing then Controllers.Fishing:StopAutoFishing()
+                elseif Controllers.Fishing.SetAutoFishing then Controllers.Fishing:SetAutoFishing(false) end
+            end
+        end)
         safeFire(function()
-            local cancel = Events.cancel_fishing_input or Config.UB.Remotes.CancelFishingInputs
+            local cancel = Events.cancel_fishing_input or (Config.UB and Config.UB.Remotes and Config.UB.Remotes.CancelFishingInputs) or GetServerRemote("RF/CancelFishingInputs")
             if cancel then CallRemote(cancel) end
         end)
-        NotifyWarning("Legit Fishing", "Dimatikan.")
+        NotifyWarning("Legit Fishing", "Auto Fishing dimatikan.")
     end
 end
 
 local function ub_loop()
-    local remotes = Config.UB.Remotes
-    local charge = remotes.ChargeFishingRod
-    local reqMinigame = remotes.RequestMinigame
-    local completedRE = remotes.FishingCompletedRE
-    local completedRF = remotes.FishingCompleted
-
     while Config.UB.Active do
         local ok, err = pcall(function()
+            ensureRodEquipped()
             local currentTime = tick()
             task.wait(GetCastingWait(Config.UB.Settings.CastDelay))
             needCast = false
-            if charge and charge.Parent then
-                task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
-            end
+            pcall(function() if Config.UB.Remotes.ChargeFishingRod and Config.UB.Remotes.ChargeFishingRod.Parent then Config.UB.Remotes.ChargeFishingRod:InvokeServer({[1] = currentTime}) end end)
             local qualityParam = GetCastingQualityParam(Config.UB.UseCastMode, Config.UB.CastMode)
-            if reqMinigame and reqMinigame.Parent then
-                task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
-            end
+            pcall(function() if Config.UB.Remotes.RequestMinigame and Config.UB.Remotes.RequestMinigame.Parent then Config.UB.Remotes.RequestMinigame:InvokeServer(1, qualityParam, currentTime) end end)
             local hookDelay = Config.amblatant and Config.YTTA.Settings.QHDelay or (Config.UB.Settings.HookDelay or 0.3)
             task.wait(math.max(hookDelay, 0.001))
-            local q = GetCatchQuality(Config.UB.CastMode or Config.CastMode)
-            if completedRE and completedRE.Parent then
-                pcall(completedRE.FireServer, completedRE, q)
-            elseif completedRF and completedRF.Parent then
-                task.spawn(function() pcall(completedRF.InvokeServer, completedRF, q) end)
-            end
+            Config.CatchQuality = GetCatchQuality(Config.UB.CastMode or Config.CastMode)
+            CompleteFishing(Config.CatchQuality)
             if Config.amblatant then
-                task.spawn(replayAmblatantNotif)
+                replayAmblatantNotif()
             end
             blatantFishCycleCount = blatantFishCycleCount + 1
         end)
-        if not ok then warn("[QH] UB error: " .. tostring(err)); task.wait(0.01) end
+        if not ok then warn("[QH] UB error: " .. tostring(err)); task.wait(0.02) end
     end
 end
 
 local function cloudy_v1_loop()
-    local remotes = Config.UB.Remotes
-    local charge = remotes.ChargeFishingRod
-    local reqMinigame = remotes.RequestMinigame
-    local completedRE = remotes.FishingCompletedRE
-    local completedRF = remotes.FishingCompleted
-
     while Config.CloudyV1.Active do
         local ok, err = pcall(function()
+            ensureRodEquipped()
             local currentTime = tick()
             task.wait(GetCastingWait(Config.CloudyV1.CastDelay))
             needCast = false
-            if charge and charge.Parent then
-                task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
-            end
+            pcall(function() if Config.UB.Remotes.ChargeFishingRod and Config.UB.Remotes.ChargeFishingRod.Parent then Config.UB.Remotes.ChargeFishingRod:InvokeServer({[1] = currentTime}) end end)
             local qualityParam = GetCastingQualityParam(Config.CloudyV1.UseCastMode, Config.CloudyV1.CastMode)
-            if reqMinigame and reqMinigame.Parent then
-                task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
-            end
+            pcall(function() if Config.UB.Remotes.RequestMinigame and Config.UB.Remotes.RequestMinigame.Parent then Config.UB.Remotes.RequestMinigame:InvokeServer(1, qualityParam, currentTime) end end)
             task.wait(math.max(Config.CloudyV1.HookDelay, 0.001))
-            local q = GetCatchQuality(Config.CloudyV1.CastMode or Config.CastMode)
-            if completedRE and completedRE.Parent then
-                pcall(completedRE.FireServer, completedRE, q)
-            elseif completedRF and completedRF.Parent then
-                task.spawn(function() pcall(completedRF.InvokeServer, completedRF, q) end)
-            end
+            Config.CatchQuality = GetCatchQuality(Config.CloudyV1.CastMode or Config.CastMode)
+            CompleteFishing(Config.CatchQuality)
             blatantFishCycleCount = blatantFishCycleCount + 1
         end)
-        if not ok then warn("[QH] Cloudy V1 error: " .. tostring(err)); task.wait(0.01) end
+        if not ok then warn("[QH] Cloudy V1 error: " .. tostring(err)); task.wait(0.02) end
     end
 end
 
 local function cloudy_1n_loop()
-    local remotes = Config.UB.Remotes
-    local charge = remotes.ChargeFishingRod
-    local reqMinigame = remotes.RequestMinigame
-    local completedRE = remotes.FishingCompletedRE
-    local completedRF = remotes.FishingCompleted
-
     while Config.Cloudy1N.Active do
         local ok, err = pcall(function()
+            ensureRodEquipped()
             local currentTime = tick()
             task.wait(GetCastingWait(Config.Cloudy1N.CastDelay))
             needCast = false
-            if charge and charge.Parent then
-                task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
-            end
+            pcall(function() if Config.UB.Remotes.ChargeFishingRod and Config.UB.Remotes.ChargeFishingRod.Parent then Config.UB.Remotes.ChargeFishingRod:InvokeServer({[1] = currentTime}) end end)
             local qualityParam = GetCastingQualityParam(Config.Cloudy1N.UseCastMode, Config.Cloudy1N.CastMode)
-            if reqMinigame and reqMinigame.Parent then
-                task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
-            end
+            pcall(function() if Config.UB.Remotes.RequestMinigame and Config.UB.Remotes.RequestMinigame.Parent then Config.UB.Remotes.RequestMinigame:InvokeServer(1, qualityParam, currentTime) end end)
             task.wait(math.max(Config.Cloudy1N.HookDelay, 0.001))
-            local q = GetCatchQuality(Config.Cloudy1N.CastMode or Config.CastMode)
-            if completedRE and completedRE.Parent then
-                pcall(completedRE.FireServer, completedRE, q)
-            elseif completedRF and completedRF.Parent then
-                task.spawn(function() pcall(completedRF.InvokeServer, completedRF, q) end)
-            end
-            task.spawn(replayAmblatantNotif)
-            blatantFishCycleCount = blatantFishCycleCount + 1
+            Config.CatchQuality = GetCatchQuality(Config.Cloudy1N.CastMode or Config.CastMode)
+            CompleteFishing(Config.CatchQuality)
+            replayAmblatantNotif()
         end)
-        if not ok then warn("[QH] Cloudy 1N error: " .. tostring(err)); task.wait(0.01) end
+        if not ok then warn("[QH] Cloudy 1N error: " .. tostring(err)); task.wait(0.02) end
     end
 end
 
@@ -4117,16 +4143,31 @@ if KaitunTab then
 
         local function Kaitun_StartLegitFishing()
             Config.AutoCatch = true
+            Config.autoFishing = true
             Config.CatchDelay = _G.Kaitun.CatchDelay or 0.7
             Config.PerfectionEnchant = true
             Config.HookNotif = true
             Kaitun_EnsureRodEquipped()
             task.wait(0.1)
             pcall(function()
-                local r = Events.UpdateAutoFishing or Config.UB.Remotes.UpdateAutoFishing
+                local r = Events.UpdateAutoFishing or Events.update_auto_fishing or (Config.UB and Config.UB.Remotes and Config.UB.Remotes.UpdateAutoFishing) or GetServerRemote("RF/UpdateAutoFishingState")
                 if r then
                     if r:IsA("RemoteFunction") then task.spawn(function() pcall(r.InvokeServer, r, true) end)
                     elseif r:IsA("RemoteEvent") then r:FireServer(true) end
+                end
+            end)
+            pcall(function()
+                local m = GetServerRemote("RF/MarkAutoFishingUsed") or GetServerRemote("RE/MarkAutoFishingUsed")
+                if m then
+                    if m:IsA("RemoteFunction") then task.spawn(function() pcall(m.InvokeServer, m) end)
+                    elseif m:IsA("RemoteEvent") then m:FireServer() end
+                end
+            end)
+            pcall(function()
+                if Controllers.Fishing then
+                    if Controllers.Fishing.ToggleAutoFishing then Controllers.Fishing:ToggleAutoFishing(true)
+                    elseif Controllers.Fishing.StartAutoFishing then Controllers.Fishing:StartAutoFishing()
+                    elseif Controllers.Fishing.SetAutoFishing then Controllers.Fishing:SetAutoFishing(true) end
                 end
             end)
             if not Tasks.legitFishingTask then
@@ -4136,6 +4177,7 @@ if KaitunTab then
 
         local function Kaitun_StopLegitFishing()
             Config.AutoCatch = false
+            Config.autoFishing = false
             Config.PerfectionEnchant = false
             Config.HookNotif = false
             if Tasks.legitFishingTask then
@@ -4143,10 +4185,17 @@ if KaitunTab then
                 Tasks.legitFishingTask = nil
             end
             pcall(function()
-                local r = Events.UpdateAutoFishing or Config.UB.Remotes.UpdateAutoFishing
+                local r = Events.UpdateAutoFishing or Events.update_auto_fishing or (Config.UB and Config.UB.Remotes and Config.UB.Remotes.UpdateAutoFishing) or GetServerRemote("RF/UpdateAutoFishingState")
                 if r then
                     if r:IsA("RemoteFunction") then task.spawn(function() pcall(r.InvokeServer, r, false) end)
                     elseif r:IsA("RemoteEvent") then r:FireServer(false) end
+                end
+            end)
+            pcall(function()
+                if Controllers.Fishing then
+                    if Controllers.Fishing.ToggleAutoFishing then Controllers.Fishing:ToggleAutoFishing(false)
+                    elseif Controllers.Fishing.StopAutoFishing then Controllers.Fishing:StopAutoFishing()
+                    elseif Controllers.Fishing.SetAutoFishing then Controllers.Fishing:SetAutoFishing(false) end
                 end
             end)
         end
@@ -6063,34 +6112,24 @@ if ExclusiveTab then
                     _G.NotifActive = 0
                     NotifySuccess("Instant Fishing", "Aktif!")
                     Tasks.instantFishingTask = task.spawn(function()
-                        local remotes = Config.UB.Remotes
-                        local charge = remotes.ChargeFishingRod
-                        local reqMinigame = remotes.RequestMinigame
-                        local completedRE = remotes.FishingCompletedRE
-                        local completedRF = remotes.FishingCompleted
-
                         while Config.InstantFishing.Active do
                             local ok, err = pcall(function()
+                                ensureRodEquipped()
                                 local currentTime = tick()
                                 task.wait(GetCastingWait(Config.InstantFishing.CastDelay))
                                 needCast = false
-                                if charge and charge.Parent then
-                                    task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
+                                if Config.UB.Remotes.ChargeFishingRod then
+                                    pcall(function() Config.UB.Remotes.ChargeFishingRod:InvokeServer({[1] = currentTime}) end)
                                 end
                                 local qualityParam = GetCastingQualityParam(Config.InstantFishing.UseCastMode, Config.InstantFishing.CastMode)
-                                if reqMinigame and reqMinigame.Parent then
-                                    task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
+                                if Config.UB.Remotes.RequestMinigame then
+                                    pcall(function() Config.UB.Remotes.RequestMinigame:InvokeServer(1, qualityParam, currentTime) end)
                                 end
                                 task.wait(math.max(Config.InstantFishing.HookDelay, 0.001))
-                                local q = GetCatchQuality(Config.InstantFishing.CastMode or Config.CastMode)
-                                if completedRE and completedRE.Parent then
-                                    pcall(completedRE.FireServer, completedRE, q)
-                                elseif completedRF and completedRF.Parent then
-                                    task.spawn(function() pcall(completedRF.InvokeServer, completedRF, q) end)
-                                end
-                                blatantFishCycleCount = blatantFishCycleCount + 1
+                                Config.CatchQuality = GetCatchQuality(Config.InstantFishing.CastMode or Config.CastMode)
+                                CompleteFishing(Config.CatchQuality)
                             end)
-                            if not ok then warn("[QH] InstantFishing error: " .. tostring(err)); task.wait(0.01) end
+                            if not ok then warn("[QH] InstantFishing error: " .. tostring(err)); task.wait(0.02) end
                         end
                     end)
                 else
@@ -6137,33 +6176,36 @@ local function instantV2_loop()
 
     local cfg = Config.InstantV2
 
+    local completeDelay = cfg.ReduceAnimation and (cfg.ReducedCompleteDelay or 0.001) or (cfg.CompleteDelay or 3.0)
+    local castDelay = cfg.ReduceAnimation and (cfg.ReducedCastDelay or 0.001) or (cfg.CastDelay or 0.3)
+
     while cfg.Active do
         local success, err = pcall(function()
+            ensureRodEquipped()
             local t0 = workspace:GetServerTimeNow()
 
-            if Charge and Charge.Parent then
-                task.spawn(function() pcall(Charge.InvokeServer, Charge, {[1] = t0}) end)
+            if Charge then
+                Charge:InvokeServer({[1] = t0})
             end
 
             local power = 1
 
-            if Request and Request.Parent then
-                task.spawn(function() pcall(Request.InvokeServer, Request, 1, power, t0) end)
+            if Request then
+                Request:InvokeServer(1, power, t0)
             end
 
-            local completeDelay = cfg.ReduceAnimation and (cfg.ReducedCompleteDelay or 0.001) or (cfg.CompleteDelay or 3.0)
             if completeDelay > 0 then
                 task.wait(completeDelay)
             end
 
             local quality = "Perfect"
-            if CompleteRE and CompleteRE.Parent then
+            if Complete then
+                Complete:InvokeServer(quality)
+            end
+            if CompleteRE then
                 CompleteRE:FireServer(quality)
-            elseif Complete and Complete.Parent then
-                task.spawn(function() pcall(Complete.InvokeServer, Complete, quality) end)
             end
 
-            local castDelay = cfg.ReduceAnimation and (cfg.ReducedCastDelay or 0.001) or (cfg.CastDelay or 0.3)
             if castDelay > 0 then
                 task.wait(castDelay)
             end
