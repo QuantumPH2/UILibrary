@@ -1135,19 +1135,21 @@ function StopFarmMovement()
 	if char then
 		local hrp = char:FindFirstChild("HumanoidRootPart")
 		if hrp then
-			hrp.Anchored = false
+			local stayCFrame = hrp.CFrame
 			for _, v in pairs(hrp:GetChildren()) do
 				if v:IsA("BodyVelocity") or v:IsA("BodyPosition") or v:IsA("BodyGyro") or v.Name == "BodyClip" then
 					pcall(function() v:Destroy() end)
 				end
 			end
-			hrp.Velocity = Vector3.zero
-			hrp.RotVelocity = Vector3.zero
-			hrp.AssemblyLinearVelocity = Vector3.zero
-			hrp.AssemblyAngularVelocity = Vector3.zero
+			hrp.Anchored = false
+			hrp.CFrame = stayCFrame
 			if C then
-				C.CFrame = hrp.CFrame
+				C.CFrame = stayCFrame
 			end
+			hrp.AssemblyLinearVelocity = Vector3.new(0, -0.1, 0)
+			hrp.AssemblyAngularVelocity = Vector3.zero
+			hrp.Velocity = Vector3.new(0, -0.1, 0)
+			hrp.RotVelocity = Vector3.zero
 		end
 		local hum = char:FindFirstChildOfClass("Humanoid")
 		if hum then
@@ -1156,6 +1158,11 @@ function StopFarmMovement()
 			hum.Sit = false
 			pcall(function()
 				hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+			end)
+			task.delay(0.05, function()
+				pcall(function()
+					hum:ChangeState(Enum.HumanoidStateType.Running)
+				end)
 			end)
 		end
 		if not _G.NoClip then
@@ -1224,11 +1231,14 @@ RunSer.Heartbeat:Connect(function()
 				bodyClip.Name = "BodyClip"
 				bodyClip.Parent = hrp
 				bodyClip.MaxForce = Vector3.new(100000, 100000, 100000)
-				bodyClip.Velocity = Vector3.new(0, 0, 0)
+				bodyClip.Velocity = Vector3.new(0, 0.05, 0)
+			else
+				bodyClip.Velocity = Vector3.new(0, 0.05, 0)
 			end
 			hrp.CFrame = C.CFrame
-			hrp.Velocity = Vector3.new(0, 0, 0)
-			hrp.RotVelocity = Vector3.new(0, 0, 0)
+			pcall(function()
+				plr.ReplicationFocus = hrp
+			end)
 		else
 			getgenv().OnFarm = false
 			shouldTween = false
@@ -1281,7 +1291,14 @@ _tp = function(targetCFrame)
 
 	local dist = (targetCFrame.Position - hrp.Position).Magnitude
 
-	if dist <= 1.5 then
+	-- Auto Request Entrance when traveling far across ocean
+	if dist > 2000 then
+		pcall(function()
+			replicated.Remotes.CommF_:InvokeServer("requestEntrance", targetCFrame.Position)
+		end)
+	end
+
+	if dist <= 12 then
 		if CurrentTween then
 			pcall(function() CurrentTween:Cancel() end)
 			CurrentTween = nil
@@ -1290,6 +1307,9 @@ _tp = function(targetCFrame)
 		CurrentTarget = targetCFrame
 		C.CFrame = targetCFrame
 		hrp.CFrame = targetCFrame
+		pcall(function()
+			replicated.Remotes.CommF_:InvokeServer("requestEntrance", targetCFrame.Position)
+		end)
 		return
 	end
 
@@ -1326,6 +1346,13 @@ _tp = function(targetCFrame)
 				CurrentTween = nil
 			end
 			shouldTween = false
+			if hrp then
+				hrp.CFrame = targetCFrame
+				C.CFrame = targetCFrame
+				pcall(function()
+					replicated.Remotes.CommF_:InvokeServer("requestEntrance", targetCFrame.Position)
+				end)
+			end
 		end)
 	else
 		shouldTween = false
@@ -3825,25 +3852,40 @@ spawn(function()
                     end
                 else
                     local distToNPC = (Root.Position - Q[6].Position).Magnitude
-                    if distToNPC > 30 then
+                    if distToNPC > 25 then
+                        if distToNPC > 2000 then
+                            pcall(function()
+                                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Q[6].Position)
+                            end)
+                        end
                         _tp(Q[6])
                         return
                     else
+                        Root.CFrame = Q[6]
+                        pcall(function()
+                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Q[6].Position)
+                        end)
                         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", Q[3], Q[2])
-                        task.wait(0.15)
+                        task.wait(0.2)
                         return
                     end
                 end
 
                 local Nearest = GetNearestMob(Q[1])
                 if not Nearest then
-                    _tp(Q[4] * CFrame.new(0, _G.MobHeight or 20, 0))
+                    _tp(Q[4] * CFrame.new(0, _G.MobHeight or 15, 0))
+                    local distToMobSpawn = (Root.Position - Q[4].Position).Magnitude
+                    if distToMobSpawn < 350 then
+                        pcall(function()
+                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Q[4].Position)
+                        end)
+                    end
                     return
                 end
 
                 CurrentMob = Nearest
                 if CurrentMob and CurrentMob:FindFirstChild("HumanoidRootPart") and G.Alive(CurrentMob) then
-                    _tp(CurrentMob.HumanoidRootPart.CFrame * CFrame.new(0, _G.MobHeight or 20, 0))
+                    _tp(CurrentMob.HumanoidRootPart.CFrame * CFrame.new(0, _G.MobHeight or 15, 0))
                     G.Kill(CurrentMob, true)
                 end
             end)
