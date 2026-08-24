@@ -808,12 +808,21 @@ local function interactPirateChest(chest, savedCFrame)
     end
     task.wait(0.35)
 
-    local prompt, click = findPirateChestInteraction(chest)
-    if not prompt and not click then
-        return false
+    -- Remote claim with RE/ClaimPirateChest
+    local claimRemote = Events.pirate_chest or GetServerRemote("RE/ClaimPirateChest") or GetServerRemote("ClaimPirateChest") or GetServerRemote("RF/ClaimPirateChest")
+    if claimRemote then
+        pcall(function()
+            if claimRemote:IsA("RemoteEvent") then
+                claimRemote:FireServer(chest)
+                claimRemote:FireServer()
+            elseif claimRemote:IsA("RemoteFunction") then
+                claimRemote:InvokeServer(chest)
+                claimRemote:InvokeServer()
+            end
+        end)
     end
 
-    local success = false
+    local prompt, click = findPirateChestInteraction(chest)
     if prompt then
         pcall(function()
             prompt.RequiresLineOfSight = false
@@ -835,7 +844,6 @@ local function interactPirateChest(chest, savedCFrame)
         if typeof(fireproximityprompt) == "function" and prompt and prompt.Parent and prompt.Enabled then
             pcall(function() fireproximityprompt(prompt) end)
         end
-        success = true
     elseif click then
         pcall(function()
             if typeof(fireclickdetector) == "function" then
@@ -844,20 +852,26 @@ local function interactPirateChest(chest, savedCFrame)
                 click:MouseClick()
             end
         end)
-        success = true
     end
 
-    task.wait(0.8)
-    return success
+    task.wait(0.6)
+    return true
 end
 
-local function ensureRodEquipped()
+local _lastEquipTime = 0
+local function ensureRodEquipped(force)
     local lp = Players.LocalPlayer
     local char = lp and lp.Character
     if not char then return false end
 
     local held = char:FindFirstChildOfClass("Tool")
     if held then return true end
+
+    local now = os.clock()
+    if not force and (now - _lastEquipTime < 1.2) then
+        return false
+    end
+    _lastEquipTime = now
 
     -- 1. Check Backpack
     local bp = lp:FindFirstChild("Backpack")
@@ -874,7 +888,7 @@ local function ensureRodEquipped()
     local eq = Events.equip or Events.equipToolRemote or Events.equip_tool_remote or (Config.UB and Config.UB.Remotes and Config.UB.Remotes.equip) or GetServerRemote("RF/EquipToolFromHotbar")
     if eq then
         pcall(function() CallRemote(eq, 1) end)
-        task.wait(0.08)
+        task.wait(0.05)
         if char:FindFirstChildOfClass("Tool") then return true end
     end
 
@@ -897,7 +911,7 @@ local function ensureRodEquipped()
                 local equipItem = Events.equipItemRemote or Events.equip_item or GetServerRemote("RF/EquipItem")
                 if bestRod and bestRod.UUID and equipItem then
                     CallRemote(equipItem, bestRod.UUID, "Fishing Rods")
-                    task.wait(0.1)
+                    task.wait(0.08)
                     if eq then CallRemote(eq, 1) end
                 end
             end
@@ -908,7 +922,7 @@ local function ensureRodEquipped()
 end
 
 local function equipRod()
-    ensureRodEquipped()
+    ensureRodEquipped(true)
     if Config.autoFishing or Config.AutoCatch or Config.PerfectionEnchant then
         pcall(function()
             local r = Events.UpdateAutoFishing or Events.update_auto_fishing or (Config.UB and Config.UB.Remotes and Config.UB.Remotes.UpdateAutoFishing) or GetServerRemote("RF/UpdateAutoFishingState")
@@ -6629,8 +6643,49 @@ if MainTab then
             return true
         end
 
-        local function runCrystalDepthMining1x()
-            if _G.isMining then return end
+        local function ensurePickaxeEquipped()
+            local lp = Players.LocalPlayer
+            local char = lp and lp.Character
+            if not char then return false end
+
+            local held = char:FindFirstChildOfClass("Tool")
+            if held and (held.Name:lower():find("axe") or held.Name:lower():find("pickaxe") or held.Name:lower():find("drill") or held.Name:lower():find("hammer")) then
+                return true
+            end
+
+            local bp = lp:FindFirstChild("Backpack")
+            if bp then
+                for _, t in ipairs(bp:GetChildren()) do
+                    if t:IsA("Tool") and (t.Name:lower():find("axe") or t.Name:lower():find("pickaxe") or t.Name:lower():find("drill") or t.Name:lower():find("hammer")) then
+                        pcall(function() char.Humanoid:EquipTool(t) end)
+                        task.wait(0.1)
+                        if char:FindFirstChildOfClass("Tool") then return true end
+                    end
+                end
+            end
+
+            local axeUUID = (_G.veilshardAxeUuid and _G.veilshardAxeUuid ~= "") and _G.veilshardAxeUuid or (_G.axeUuid and _G.axeUuid ~= "" and _G.axeUuid or nil)
+            if not axeUUID then
+                axeUUID = (getVeilshardAxeUUID and getVeilshardAxeUUID()) or (getAxeUUID and getAxeUUID())
+            end
+
+            local equipItem = Events.equipItem or Events.equipItemRemote or GetServerRemote("RF/EquipItem") or GetServerRemote("RE/EquipItem")
+            if axeUUID and axeUUID ~= "" and equipItem then
+                pcall(function()
+                    if equipItem:IsA("RemoteEvent") then
+                        equipItem:FireServer(axeUUID, "Gears")
+                    elseif equipItem:IsA("RemoteFunction") then
+                        equipItem:InvokeServer(axeUUID, "Gears")
+                    end
+                end)
+                task.wait(0.2)
+            end
+
+            return true
+        end
+
+        local function runCrystalDepthMining(isContinuous)
+            if _G.isMining and not isContinuous then return end
             _G.isMining = true
 
             local hrp = getHRP()
@@ -6643,69 +6698,89 @@ if MainTab then
                 return
             end
 
-            if not _G.axeUuid or _G.axeUuid == "" then
-                getAxeUUID()
-                task.wait(0.3)
-                if not _G.axeUuid or _G.axeUuid == "" then
-                    NotifyError("Mining", "Axe/Pickaxe tidak ditemukan di Inventory!")
-                    _G.isMining = false
-                    _G.AutoMining = false
-                    if Toggle_AutoMiningCrystal and Toggle_AutoMiningCrystal.SetValue then
-                        pcall(function() Toggle_AutoMiningCrystal:SetValue(false) end)
-                    end
-                    return
-                end
-            end
+            ensurePickaxeEquipped()
 
             local savedCFrame = hrp.CFrame
             local depthPos = LOCATIONS["Crystal Depth"] or Vector3.new(5504.77, -904.97, 15290.48)
+            local hasInitialTeleported = false
 
-            if (hrp.Position - depthPos).Magnitude > 400 then
-                NotifyInfo("Mining", "Teleporting ke Crystal Depth...")
-                TeleportTo(CFrame.new(depthPos + Vector3.new(0, 5, 0)))
-                task.wait(1.2)
-            end
+            while (isContinuous and _G.AutoMining) or (not isContinuous and _G.isMining) do
+                local hrpCurrent = getHRP()
+                if not hrpCurrent then task.wait(1); continue end
 
-            if Events.equipItem and _G.axeUuid and _G.axeUuid ~= "" then
-                pcall(function() Events.equipItem:FireServer(_G.axeUuid, "Gears") end)
-                task.wait(0.3)
-            end
-
-            NotifyInfo("Mining", "Scanning mineable crystals di Crystal Depth...")
-            local crystals = getMineableNormalCrystals()
-
-            if #crystals == 0 then
-                NotifyWarning("Mining", "Tidak ada crystal yang bisa ditambang di Crystal Depth saat ini.")
-                task.wait(0.5)
-                NotifyInfo("Mining", "Kembali ke posisi awal...")
-                TeleportTo(savedCFrame)
-                _G.isMining = false
-                _G.AutoMining = false
-                if Toggle_AutoMiningCrystal and Toggle_AutoMiningCrystal.SetValue then
-                    pcall(function() Toggle_AutoMiningCrystal:SetValue(false) end)
-                end
-                return
-            end
-
-            NotifySuccess("Mining", "Ditemukan " .. #crystals .. " crystal! Mulai mining (1x Run)...")
-
-            for i, crystalData in ipairs(crystals) do
-                if not _G.isMining and not _G.AutoMining then
-                    NotifyInfo("Mining", "Mining dibatalkan.")
-                    break
-                end
-                mineNormalCrystal(crystalData, i, #crystals)
-                if i < #crystals then
+                if not hasInitialTeleported then
+                    hasInitialTeleported = true
+                    NotifyInfo("Mining", "Teleporting ke Crystal Depth untuk deteksi awal...")
+                    TeleportTo(CFrame.new(depthPos + Vector3.new(0, 5, 0)))
                     task.wait(0.5)
+                    ensurePickaxeEquipped()
+
+                    -- Tunggu 5 detik untuk deteksi crystal
+                    NotifyInfo("Mining", "Menunggu 5 detik deteksi crystal...")
+                    local waited = 0
+                    while waited < 5 and ((isContinuous and _G.AutoMining) or (not isContinuous and _G.isMining)) do
+                        task.wait(0.5)
+                        waited = waited + 0.5
+                    end
+                    if isContinuous and not _G.AutoMining then break end
+                    if not isContinuous and not _G.isMining then break end
+
+                    local crystals = getMineableNormalCrystals()
+                    if #crystals > 0 then
+                        NotifySuccess("Mining", "Ditemukan " .. #crystals .. " crystal! Mulai mining...")
+                        for i, crystalData in ipairs(crystals) do
+                            if isContinuous and not _G.AutoMining then break end
+                            if not isContinuous and not _G.isMining then break end
+                            ensurePickaxeEquipped()
+                            mineNormalCrystal(crystalData, i, #crystals)
+                            task.wait(0.5)
+                        end
+                    else
+                        NotifyWarning("Mining", "Tidak ada crystal saat ini. Kembali ke posisi awal...")
+                    end
+
+                    -- Balik ke tempat semula
+                    TeleportTo(savedCFrame * CFrame.new(0, 20, 0))
+                    task.wait(0.2)
+                    TeleportTo(savedCFrame)
+
+                    if not isContinuous then
+                        NotifySuccess("Mining", "Selesai 1x putaran mining Crystal Depth!")
+                        break
+                    else
+                        NotifyInfo("Mining", "Kembali ke posisi semula. Lanjut scan berkala di tempat...")
+                    end
+                else
+                    -- Scan berikutnya: Scan di tempat tanpa teleport
+                    local crystals = getMineableNormalCrystals()
+                    if #crystals > 0 then
+                        NotifySuccess("Mining", "Crystal baru terdeteksi (" .. #crystals .. ")! Teleporting ke Crystal Depth...")
+                        TeleportTo(CFrame.new(depthPos + Vector3.new(0, 5, 0)))
+                        task.wait(0.5)
+                        ensurePickaxeEquipped()
+
+                        for i, crystalData in ipairs(crystals) do
+                            if not _G.AutoMining then break end
+                            ensurePickaxeEquipped()
+                            mineNormalCrystal(crystalData, i, #crystals)
+                            task.wait(0.5)
+                        end
+
+                        -- Balik ke tempat semula
+                        TeleportTo(savedCFrame * CFrame.new(0, 20, 0))
+                        task.wait(0.2)
+                        TeleportTo(savedCFrame)
+                        NotifySuccess("Mining", "Mining selesai! Kembali ke posisi semula & lanjut scan di tempat...")
+                    end
+
+                    -- Delay antar scan di tempat
+                    local delayCount = 0
+                    while delayCount < 5 and _G.AutoMining do
+                        task.wait(1)
+                        delayCount = delayCount + 1
+                    end
                 end
             end
-
-            NotifyInfo("Mining", "Semua crystal selesai! Kembali ke posisi semula...")
-            TeleportTo(savedCFrame * CFrame.new(0, 20, 0))
-            task.wait(0.2)
-            TeleportTo(savedCFrame)
-
-            NotifySuccess("Mining", "Selesai 1x putaran mining Crystal Depth!")
 
             _G.isMining = false
             _G.AutoMining = false
@@ -6719,7 +6794,7 @@ if MainTab then
             Description = "Scan crystal mineable, hold ProximityPrompt, dan kembali ke posisi semula (1x selesai)",
             Callback = function()
                 task.spawn(function()
-                    runCrystalDepthMining1x()
+                    runCrystalDepthMining(false)
                 end)
             end
         })
@@ -6736,7 +6811,7 @@ if MainTab then
                         _G.AutoMiningThread = nil
                     end
                     _G.AutoMiningThread = task.spawn(function()
-                        runCrystalDepthMining1x()
+                        runCrystalDepthMining(true)
                         _G.AutoMiningThread = nil
                     end)
                 else
@@ -6839,10 +6914,7 @@ if MainTab then
             TeleportTo(mineTarget)
             task.wait(0.2)
 
-            if _G.veilshardAxeUuid ~= "" and Events.equipItem then
-                pcall(function() Events.equipItem:FireServer(_G.veilshardAxeUuid, "Gears") end)
-                task.wait(0.4)
-            end
+            ensurePickaxeEquipped()
 
             pcall(function()
                 for _, child in ipairs(crystalData.Model:GetDescendants()) do
@@ -6857,46 +6929,116 @@ if MainTab then
             return true
         end
 
+        local function runVeilshardMining(isContinuous)
+            local hrp = getHRP()
+            if not hrp then return end
+
+            ensurePickaxeEquipped()
+
+            local savedCFrame = hrp.CFrame
+            local lavaBasinPos = CFrame.new(950.876, 85.282, -10199.427)
+            local hasInitialTeleported = false
+
+            while (isContinuous and _G.VeilshardMiningActive) or (not isContinuous and _G.isVeilshardMining) do
+                local hrpCurrent = getHRP()
+                if not hrpCurrent then task.wait(1); continue end
+
+                if not hasInitialTeleported then
+                    hasInitialTeleported = true
+                    NotifyInfo("Veilshard", "Teleporting ke Lava Basin untuk deteksi awal...")
+                    TeleportTo(CFrame.new(950.876, 140, -10199.427))
+                    task.wait(0.2)
+                    TeleportTo(lavaBasinPos)
+                    task.wait(0.5)
+                    ensurePickaxeEquipped()
+
+                    -- Tunggu 5 detik untuk deteksi crystal
+                    NotifyInfo("Veilshard", "Menunggu 5 detik deteksi crystal...")
+                    local waited = 0
+                    while waited < 5 and ((isContinuous and _G.VeilshardMiningActive) or (not isContinuous and _G.isVeilshardMining)) do
+                        task.wait(0.5)
+                        waited = waited + 0.5
+                    end
+                    if isContinuous and not _G.VeilshardMiningActive then break end
+                    if not isContinuous and not _G.isVeilshardMining then break end
+
+                    local crystals = getMineableVeilshardCrystals()
+                    if #crystals > 0 then
+                        NotifySuccess("Veilshard", "Ditemukan " .. #crystals .. " crystal! Mulai mining...")
+                        for i, crystalData in ipairs(crystals) do
+                            if isContinuous and not _G.VeilshardMiningActive then break end
+                            if not isContinuous and not _G.isVeilshardMining then break end
+                            ensurePickaxeEquipped()
+                            mineVeilshardCrystal(crystalData, i, #crystals)
+                            if i < #crystals then
+                                NotifyInfo("Veilshard", "Cooldown 11 detik...")
+                                task.wait(11)
+                            end
+                        end
+                    else
+                        NotifyWarning("Veilshard", "Tidak ada crystal saat ini. Kembali ke posisi awal...")
+                    end
+
+                    -- Balik ke tempat semula
+                    TeleportTo(savedCFrame * CFrame.new(0, 50, 0))
+                    task.wait(0.2)
+                    TeleportTo(savedCFrame)
+
+                    if not isContinuous then
+                        NotifySuccess("Veilshard", "Selesai 1x putaran mining Veilshard!")
+                        break
+                    else
+                        NotifyInfo("Veilshard", "Kembali ke posisi semula. Lanjut scan berkala di tempat...")
+                    end
+                else
+                    -- Scan berikutnya: Scan di tempat tanpa teleport
+                    local crystals = getMineableVeilshardCrystals()
+                    if #crystals > 0 then
+                        NotifySuccess("Veilshard", "Veilshard crystal terdeteksi (" .. #crystals .. ")! Teleporting ke Lava Basin...")
+                        TeleportTo(CFrame.new(950.876, 140, -10199.427))
+                        task.wait(0.2)
+                        TeleportTo(lavaBasinPos)
+                        task.wait(0.5)
+                        ensurePickaxeEquipped()
+
+                        for i, crystalData in ipairs(crystals) do
+                            if not _G.VeilshardMiningActive then break end
+                            ensurePickaxeEquipped()
+                            mineVeilshardCrystal(crystalData, i, #crystals)
+                            if i < #crystals then
+                                NotifyInfo("Veilshard", "Cooldown 11 detik...")
+                                task.wait(11)
+                            end
+                        end
+
+                        -- Balik ke tempat semula
+                        TeleportTo(savedCFrame * CFrame.new(0, 50, 0))
+                        task.wait(0.2)
+                        TeleportTo(savedCFrame)
+                        NotifySuccess("Veilshard", "Mining selesai! Kembali ke posisi semula & lanjut scan di tempat...")
+                    end
+
+                    -- Delay antar scan di tempat
+                    local delayCount = 0
+                    while delayCount < 5 and _G.VeilshardMiningActive do
+                        task.wait(1)
+                        delayCount = delayCount + 1
+                    end
+                end
+            end
+
+            _G.isVeilshardMining = false
+            _G.VeilshardMiningActive = false
+        end
+
         Section_MainTab_10:AddButton({
             Title = "Manual Mine Veilshard",
             Description = "Teleport ke Lava Basin & mining semua crystal (Anti-Detect)",
             Callback = function()
-                if not _G.veilshardAxeUuid or _G.veilshardAxeUuid == "" then
-                    getVeilshardAxeUUID()
-                    task.wait(0.5)
-                    if not _G.veilshardAxeUuid or _G.veilshardAxeUuid == "" then
-                        NotifyError("Veilshard", "Axe/Pickaxe tidak ditemukan di Inventory!")
-                        return
-                    end
-                end
-                local hrp = getHRP()
-                if not hrp then return end
-                local savedCFrame = hrp.CFrame
                 _G.isVeilshardMining = true
-                NotifyInfo("Veilshard", "Teleporting to Lava Basin...")
-
-                TeleportTo(CFrame.new(950.876, 140, -10199.427))
-                task.wait(0.2)
-                TeleportTo(CFrame.new(950.876, 85.282, -10199.427))
-                task.wait(1.5)
-
-                local crystals = getMineableVeilshardCrystals()
-                NotifyInfo("Veilshard", "Ditemukan " .. #crystals .. " crystal yang bisa ditambang!")
-                for i, crystalData in ipairs(crystals) do
-                    if not _G.isVeilshardMining then break end
-                    mineVeilshardCrystal(crystalData, i, #crystals)
-                    if i < #crystals then
-                        NotifyInfo("Veilshard", "Cooldown 11 detik...")
-                        task.wait(11)
-                    end
-                end
-                _G.isVeilshardMining = false
-
-                NotifyInfo("Veilshard", "Teleporting back...")
-                TeleportTo(savedCFrame * CFrame.new(0, 50, 0))
-                task.wait(0.2)
-                TeleportTo(savedCFrame)
-                NotifySuccess("Veilshard", "Selesai! Kembali ke posisi semula.")
+                task.spawn(function()
+                    runVeilshardMining(false)
+                end)
             end
         })
 
@@ -6911,97 +7053,9 @@ if MainTab then
                         pcall(function() task.cancel(_G.VeilshardMiningThread) end)
                         _G.VeilshardMiningThread = nil
                     end
-                    if not _G.veilshardAxeUuid or _G.veilshardAxeUuid == "" then
-                        getVeilshardAxeUUID()
-                        task.wait(0.5)
-                    end
-                    if not _G.veilshardAxeUuid or _G.veilshardAxeUuid == "" then
-                        NotifyError("Veilshard", "Axe/Pickaxe tidak ditemukan!")
-                        _G.VeilshardMiningActive = false
-                        return
-                    end
                     _G.VeilshardMiningThread = task.spawn(function()
-                        local savedCFrame = nil
-                        while _G.VeilshardMiningActive do
-                            local ok, err = pcall(function()
-                                local hrp2 = getHRP()
-                                if not hrp2 then task.wait(1); return end
-
-                                if not savedCFrame then
-                                    savedCFrame = hrp2.CFrame
-                                end
-
-                                if not _G.veilshardAxeUuid or _G.veilshardAxeUuid == "" then
-                                    getVeilshardAxeUUID()
-                                    task.wait(0.3)
-                                end
-                                if _G.veilshardAxeUuid ~= "" and Events.equipItem then
-                                    pcall(function() Events.equipItem:FireServer(_G.veilshardAxeUuid, "Gears") end)
-                                    task.wait(0.5)
-                                end
-
-                                NotifyInfo("Veilshard", "Teleporting to Lava Basin...")
-                                TeleportTo(CFrame.new(950.876, 140, -10199.427))
-                                task.wait(0.2)
-                                TeleportTo(CFrame.new(950.876, 85.282, -10199.427))
-                                task.wait(1.5)
-
-                                if _G.veilshardAxeUuid ~= "" and Events.equipItem then
-                                    pcall(function() Events.equipItem:FireServer(_G.veilshardAxeUuid, "Gears") end)
-                                end
-                                task.wait(0.4)
-
-                                local crystals = getMineableVeilshardCrystals()
-                                if #crystals > 0 then
-                                    NotifyInfo("Veilshard", "Mining " .. #crystals .. " crystal...")
-                                    for i, crystalData in ipairs(crystals) do
-                                        if not _G.VeilshardMiningActive then break end
-                                        mineVeilshardCrystal(crystalData, i, #crystals)
-                                        if i < #crystals then
-                                            NotifyInfo("Veilshard", "Cooldown 11 detik...")
-                                            task.wait(11)
-                                        end
-                                    end
-
-                                    if _G.VeilshardMiningActive then
-                                        NotifyInfo("Veilshard", "Scan ulang crystal baru di Lava Basin...")
-                                        task.wait(3)
-                                        local newCrystals = getMineableVeilshardCrystals()
-                                        if #newCrystals > 0 then
-                                            NotifySuccess("Veilshard", "Crystal baru ditemukan: " .. #newCrystals .. "! Mining lagi...")
-                                        else
-                                            NotifyInfo("Veilshard", "Tidak ada crystal baru. Kembali ke fishing...")
-                                            if savedCFrame then
-                                                TeleportTo(savedCFrame * CFrame.new(0, 50, 0))
-                                                task.wait(0.2)
-                                                TeleportTo(savedCFrame)
-                                            end
-                                            task.wait(30)
-                                        end
-                                    end
-                                else
-                                    NotifyInfo("Veilshard", "Tidak ada crystal saat ini. Scan ulang dalam 30 detik...")
-                                    if savedCFrame then
-                                        TeleportTo(savedCFrame * CFrame.new(0, 50, 0))
-                                        task.wait(0.2)
-                                        TeleportTo(savedCFrame)
-                                    end
-                                    task.wait(30)
-                                end
-
-                                if _G.VeilshardMiningActive and savedCFrame then
-                                    TeleportTo(savedCFrame * CFrame.new(0, 50, 0))
-                                    task.wait(0.2)
-                                    TeleportTo(savedCFrame)
-                                end
-                            end)
-
-                            if not ok then
-                                warn("[Veilshard Mining] Error: " .. tostring(err))
-                                task.wait(5)
-                            end
-                        end
-                        NotifyInfo("Veilshard", "Auto mining dihentikan.")
+                        runVeilshardMining(true)
+                        _G.VeilshardMiningThread = nil
                     end)
                     NotifySuccess("Veilshard", "Auto mining aktif! Anti-Detect Teleport Mode.")
                 else
