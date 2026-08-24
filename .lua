@@ -269,6 +269,30 @@ local function loadRemotes()
         if remote then loaded = loaded + 1
         else failed = failed + 1; warn("[QH] Remote gagal: " .. remoteName) end
     end
+
+    Events.UpdateAutoFishing = Events.update_auto_fishing or GetServerRemote("RF/UpdateAutoFishingState")
+    Events.equip = Events.equip_tool_remote or GetServerRemote("RF/EquipToolFromHotbar")
+    Events.equipToolRemote = Events.equip_tool_remote
+    Events.equipItemRemote = Events.equip_item or GetServerRemote("RF/EquipItem")
+    Events.equipItem = Events.equip_item
+    Events.unequip = Events.un_equip_tool or GetServerRemote("RF/UnequipToolFromHotbar")
+    Events.favorite = Events.favorite_item or GetServerRemote("RF/FavoriteItem")
+
+    setmetatable(Events, {
+        __index = function(t, key)
+            if type(key) ~= "string" then return nil end
+            local normalized = key:lower():gsub("[%s_%-]+", "")
+            for k, v in pairs(t) do
+                if type(k) == "string" and k:lower():gsub("[%s_%-]+", "") == normalized then
+                    return v
+                end
+            end
+            local r = GetServerRemote("RF/" .. key) or GetServerRemote("RE/" .. key) or GetServerRemote(key)
+            if r then rawset(t, key, r) end
+            return r
+        end
+    })
+
     print("[QH] Loaded: " .. loaded .. " | Failed: " .. failed)
     return loaded, failed
 end
@@ -1468,88 +1492,189 @@ local function CompleteFishing(quality)
     end
 end
 
+local function legit_fishing_loop()
+    local remotes = Config.UB.Remotes
+    local charge = remotes.ChargeFishingRod or Events.charge_rod_remote or GetServerRemote("RF/ChargeFishingRod")
+    local reqMinigame = remotes.RequestMinigame or Events.minigame_remote or GetServerRemote("RF/RequestFishingMinigameStarted")
+    local completedRE = remotes.FishingCompletedRE or Events.finish_remote or GetServerRemote("RE/CatchFishCompleted")
+    local completedRF = remotes.FishingCompleted or GetServerRemote("RF/CatchFishCompleted")
+
+    while Config.AutoCatch do
+        local ok, err = pcall(function()
+            local currentTime = tick()
+            if charge and charge.Parent then
+                task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
+            end
+            local qualityParam = 1
+            if reqMinigame and reqMinigame.Parent then
+                task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
+            end
+
+            local catchDelay = math.clamp(Config.CatchDelay or 0.7, 0.05, 10)
+            task.wait(catchDelay)
+
+            if not Config.AutoCatch then return end
+
+            local q = Config.CatchQuality or "Perfect"
+            if completedRE and completedRE.Parent then
+                pcall(completedRE.FireServer, completedRE, q)
+            elseif completedRF and completedRF.Parent then
+                task.spawn(function() pcall(completedRF.InvokeServer, completedRF, q) end)
+            end
+
+            task.wait(0.35)
+        end)
+        if not ok then warn("[QH] Legit Fishing error: " .. tostring(err)); task.wait(0.1) end
+    end
+end
+
+local function onToggleLegitFishing(val)
+    Config.AutoCatch = val
+    if val then
+        if Config.UB and Config.UB.Active then onToggleUB(false) end
+        if Config.amblatant then onToggleYTTA(false) end
+        if Config.CloudyV1 and Config.CloudyV1.Active then onToggleCloudyV1(false) end
+        if Config.Cloudy1N and Config.Cloudy1N.Active then onToggleCloudy1N(false) end
+        if Config.InstantFishing and Config.InstantFishing.Active then Config.InstantFishing.Active = false end
+        if Config.InstantV2 and Config.InstantV2.Active then stopInstantV2() end
+
+        equipRod()
+        task.wait(0.2)
+        pcall(function()
+            local r = Events.UpdateAutoFishing or Config.UB.Remotes.UpdateAutoFishing
+            if r then
+                if r:IsA("RemoteFunction") then task.spawn(function() pcall(r.InvokeServer, r, true) end)
+                elseif r:IsA("RemoteEvent") then r:FireServer(true) end
+            end
+        end)
+        if Tasks.legitFishingTask then pcall(task.cancel, Tasks.legitFishingTask); Tasks.legitFishingTask = nil end
+        Tasks.legitFishingTask = task.spawn(legit_fishing_loop)
+        NotifySuccess("Legit Fishing", "Aktif! Catch Delay: " .. tostring(Config.CatchDelay or 0.7) .. "s")
+    else
+        Config.AutoCatch = false
+        if Tasks.legitFishingTask then
+            pcall(task.cancel, Tasks.legitFishingTask)
+            Tasks.legitFishingTask = nil
+        end
+        pcall(function()
+            local r = Events.UpdateAutoFishing or Config.UB.Remotes.UpdateAutoFishing
+            if r then
+                if r:IsA("RemoteFunction") then task.spawn(function() pcall(r.InvokeServer, r, false) end)
+                elseif r:IsA("RemoteEvent") then r:FireServer(false) end
+            end
+        end)
+        safeFire(function()
+            local cancel = Events.cancel_fishing_input or Config.UB.Remotes.CancelFishingInputs
+            if cancel then CallRemote(cancel) end
+        end)
+        NotifyWarning("Legit Fishing", "Dimatikan.")
+    end
+end
+
 local function ub_loop()
     local remotes = Config.UB.Remotes
+    local charge = remotes.ChargeFishingRod
+    local reqMinigame = remotes.RequestMinigame
+    local completedRE = remotes.FishingCompletedRE
+    local completedRF = remotes.FishingCompleted
+
     while Config.UB.Active do
         local ok, err = pcall(function()
             local currentTime = tick()
             task.wait(GetCastingWait(Config.UB.Settings.CastDelay))
             needCast = false
-            local charge = remotes.ChargeFishingRod
             if charge and charge.Parent then
                 task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
             end
             local qualityParam = GetCastingQualityParam(Config.UB.UseCastMode, Config.UB.CastMode)
-            local reqMinigame = remotes.RequestMinigame
             if reqMinigame and reqMinigame.Parent then
                 task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
             end
             local hookDelay = Config.amblatant and Config.YTTA.Settings.QHDelay or (Config.UB.Settings.HookDelay or 0.3)
             task.wait(math.max(hookDelay, 0.001))
-            Config.CatchQuality = GetCatchQuality(Config.UB.CastMode or Config.CastMode)
-            CompleteFishing(Config.CatchQuality)
+            local q = GetCatchQuality(Config.UB.CastMode or Config.CastMode)
+            if completedRE and completedRE.Parent then
+                pcall(completedRE.FireServer, completedRE, q)
+            elseif completedRF and completedRF.Parent then
+                task.spawn(function() pcall(completedRF.InvokeServer, completedRF, q) end)
+            end
             if Config.amblatant then
                 task.spawn(replayAmblatantNotif)
             end
             blatantFishCycleCount = blatantFishCycleCount + 1
         end)
-        if not ok then warn("[QH] UB error: " .. tostring(err)); task.wait(0.02) end
+        if not ok then warn("[QH] UB error: " .. tostring(err)); task.wait(0.01) end
     end
 end
 
 local function cloudy_v1_loop()
     local remotes = Config.UB.Remotes
+    local charge = remotes.ChargeFishingRod
+    local reqMinigame = remotes.RequestMinigame
+    local completedRE = remotes.FishingCompletedRE
+    local completedRF = remotes.FishingCompleted
+
     while Config.CloudyV1.Active do
         local ok, err = pcall(function()
             local currentTime = tick()
             task.wait(GetCastingWait(Config.CloudyV1.CastDelay))
             needCast = false
-            local charge = remotes.ChargeFishingRod
             if charge and charge.Parent then
                 task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
             end
             local qualityParam = GetCastingQualityParam(Config.CloudyV1.UseCastMode, Config.CloudyV1.CastMode)
-            local reqMinigame = remotes.RequestMinigame
             if reqMinigame and reqMinigame.Parent then
                 task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
             end
             task.wait(math.max(Config.CloudyV1.HookDelay, 0.001))
-            Config.CatchQuality = GetCatchQuality(Config.CloudyV1.CastMode or Config.CastMode)
-            CompleteFishing(Config.CatchQuality)
+            local q = GetCatchQuality(Config.CloudyV1.CastMode or Config.CastMode)
+            if completedRE and completedRE.Parent then
+                pcall(completedRE.FireServer, completedRE, q)
+            elseif completedRF and completedRF.Parent then
+                task.spawn(function() pcall(completedRF.InvokeServer, completedRF, q) end)
+            end
             blatantFishCycleCount = blatantFishCycleCount + 1
         end)
-        if not ok then warn("[QH] Cloudy V1 error: " .. tostring(err)); task.wait(0.02) end
+        if not ok then warn("[QH] Cloudy V1 error: " .. tostring(err)); task.wait(0.01) end
     end
 end
 
 local function cloudy_1n_loop()
     local remotes = Config.UB.Remotes
+    local charge = remotes.ChargeFishingRod
+    local reqMinigame = remotes.RequestMinigame
+    local completedRE = remotes.FishingCompletedRE
+    local completedRF = remotes.FishingCompleted
+
     while Config.Cloudy1N.Active do
         local ok, err = pcall(function()
             local currentTime = tick()
             task.wait(GetCastingWait(Config.Cloudy1N.CastDelay))
             needCast = false
-            local charge = remotes.ChargeFishingRod
             if charge and charge.Parent then
                 task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
             end
             local qualityParam = GetCastingQualityParam(Config.Cloudy1N.UseCastMode, Config.Cloudy1N.CastMode)
-            local reqMinigame = remotes.RequestMinigame
             if reqMinigame and reqMinigame.Parent then
                 task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
             end
             task.wait(math.max(Config.Cloudy1N.HookDelay, 0.001))
-            Config.CatchQuality = GetCatchQuality(Config.Cloudy1N.CastMode or Config.CastMode)
-            CompleteFishing(Config.CatchQuality)
+            local q = GetCatchQuality(Config.Cloudy1N.CastMode or Config.CastMode)
+            if completedRE and completedRE.Parent then
+                pcall(completedRE.FireServer, completedRE, q)
+            elseif completedRF and completedRF.Parent then
+                task.spawn(function() pcall(completedRF.InvokeServer, completedRF, q) end)
+            end
             task.spawn(replayAmblatantNotif)
             blatantFishCycleCount = blatantFishCycleCount + 1
         end)
-        if not ok then warn("[QH] Cloudy 1N error: " .. tostring(err)); task.wait(0.02) end
+        if not ok then warn("[QH] Cloudy 1N error: " .. tostring(err)); task.wait(0.01) end
     end
 end
 
 local function onToggleCloudy1N(value)
     if value then
+        if Config.AutoCatch then onToggleLegitFishing(false) end
         if Config.UB.Active then onToggleUB(false) end
         if Config.amblatant then onToggleYTTA(false) end
         if Config.CloudyV1.Active then onToggleCloudyV1(false) end
@@ -1609,6 +1734,7 @@ end
 
 local function onToggleUB(value)
     if value then
+        if Config.AutoCatch then onToggleLegitFishing(false) end
         if Config.Cloudy1N and Config.Cloudy1N.Active then onToggleCloudy1N(false) end
         if Config.amblatant then onToggleYTTA(false) end
         if Config.CloudyV1 and Config.CloudyV1.Active then onToggleCloudyV1(false) end
@@ -1626,6 +1752,7 @@ end
 local function onToggleYTTA(value)
     Config.amblatant = value
     if value then
+        if Config.AutoCatch then onToggleLegitFishing(false) end
         if Config.Cloudy1N and Config.Cloudy1N.Active then onToggleCloudy1N(false) end
         if Config.CloudyV1 and Config.CloudyV1.Active then onToggleCloudyV1(false) end
         if Config.InstantFishing and Config.InstantFishing.Active then Config.InstantFishing.Active = false end
@@ -1653,6 +1780,7 @@ end
 
 local function onToggleCloudyV1(value)
     if value then
+        if Config.AutoCatch then onToggleLegitFishing(false) end
         if Config.UB.Active then onToggleUB(false) end
         if Config.amblatant then onToggleYTTA(false) end
         if Config.Cloudy1N and Config.Cloudy1N.Active then onToggleCloudy1N(false) end
@@ -3995,23 +4123,30 @@ if KaitunTab then
             Kaitun_EnsureRodEquipped()
             task.wait(0.1)
             pcall(function()
-                if Events.UpdateAutoFishing then
-                    CallRemote(Events.UpdateAutoFishing, true)
-                elseif Config.UB.Remotes.UpdateAutoFishing then
-                    Config.UB.Remotes.UpdateAutoFishing:InvokeServer(true)
+                local r = Events.UpdateAutoFishing or Config.UB.Remotes.UpdateAutoFishing
+                if r then
+                    if r:IsA("RemoteFunction") then task.spawn(function() pcall(r.InvokeServer, r, true) end)
+                    elseif r:IsA("RemoteEvent") then r:FireServer(true) end
                 end
             end)
+            if not Tasks.legitFishingTask then
+                Tasks.legitFishingTask = task.spawn(legit_fishing_loop)
+            end
         end
 
         local function Kaitun_StopLegitFishing()
             Config.AutoCatch = false
             Config.PerfectionEnchant = false
             Config.HookNotif = false
+            if Tasks.legitFishingTask then
+                pcall(task.cancel, Tasks.legitFishingTask)
+                Tasks.legitFishingTask = nil
+            end
             pcall(function()
-                if Events.UpdateAutoFishing then
-                    CallRemote(Events.UpdateAutoFishing, false)
-                elseif Config.UB.Remotes.UpdateAutoFishing then
-                    Config.UB.Remotes.UpdateAutoFishing:InvokeServer(false)
+                local r = Events.UpdateAutoFishing or Config.UB.Remotes.UpdateAutoFishing
+                if r then
+                    if r:IsA("RemoteFunction") then task.spawn(function() pcall(r.InvokeServer, r, false) end)
+                    elseif r:IsA("RemoteEvent") then r:FireServer(false) end
                 end
             end)
         end
@@ -5790,9 +5925,7 @@ if ExclusiveTab then
         Section_ExclusiveTab_3:AddToggle("Toggle_LegitFishingAutoCatch", {
             Title = "Legit Fishing (Auto Catch)", Default = false,
             Callback = function(val)
-                Config.AutoCatch = val
-                if val then equipRod(); CallRemote(Events.UpdateAutoFishing, true)
-                else CallRemote(Events.UpdateAutoFishing, false) end
+                onToggleLegitFishing(val)
             end
         })
         Section_ExclusiveTab_3:AddToggle("Toggle_PerfectionEnchant", {
@@ -5912,10 +6045,12 @@ if ExclusiveTab then
             Default = false,
             Callback = function(val)
                 if val then
+                    if Config.AutoCatch then onToggleLegitFishing(false) end
                     if Config.UB.Active then onToggleUB(false) end
                     if Config.amblatant then onToggleYTTA(false) end
                     if Config.CloudyV1.Active then onToggleCloudyV1(false) end
                     if Config.Cloudy1N.Active then onToggleCloudy1N(false) end
+                    if Config.InstantV2 and Config.InstantV2.Active then stopInstantV2() end
                     _G.QHBetaAnimSpeed = false
                     patchInstantBaitOverrideToCastPosition(false)
                     disableNotifDelay()
@@ -5929,26 +6064,33 @@ if ExclusiveTab then
                     NotifySuccess("Instant Fishing", "Aktif!")
                     Tasks.instantFishingTask = task.spawn(function()
                         local remotes = Config.UB.Remotes
+                        local charge = remotes.ChargeFishingRod
+                        local reqMinigame = remotes.RequestMinigame
+                        local completedRE = remotes.FishingCompletedRE
+                        local completedRF = remotes.FishingCompleted
+
                         while Config.InstantFishing.Active do
                             local ok, err = pcall(function()
                                 local currentTime = tick()
                                 task.wait(GetCastingWait(Config.InstantFishing.CastDelay))
                                 needCast = false
-                                local charge = remotes.ChargeFishingRod
                                 if charge and charge.Parent then
                                     task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
                                 end
                                 local qualityParam = GetCastingQualityParam(Config.InstantFishing.UseCastMode, Config.InstantFishing.CastMode)
-                                local reqMinigame = remotes.RequestMinigame
                                 if reqMinigame and reqMinigame.Parent then
                                     task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
                                 end
                                 task.wait(math.max(Config.InstantFishing.HookDelay, 0.001))
-                                Config.CatchQuality = GetCatchQuality(Config.InstantFishing.CastMode or Config.CastMode)
-                                CompleteFishing(Config.CatchQuality)
+                                local q = GetCatchQuality(Config.InstantFishing.CastMode or Config.CastMode)
+                                if completedRE and completedRE.Parent then
+                                    pcall(completedRE.FireServer, completedRE, q)
+                                elseif completedRF and completedRF.Parent then
+                                    task.spawn(function() pcall(completedRF.InvokeServer, completedRF, q) end)
+                                end
                                 blatantFishCycleCount = blatantFishCycleCount + 1
                             end)
-                            if not ok then warn("[QH] InstantFishing error: " .. tostring(err)); task.wait(0.02) end
+                            if not ok then warn("[QH] InstantFishing error: " .. tostring(err)); task.wait(0.01) end
                         end
                     end)
                 else
@@ -6036,6 +6178,12 @@ end
 
 function startInstantV2()
     if Config.InstantV2.Active then return end
+    if Config.AutoCatch then onToggleLegitFishing(false) end
+    if Config.UB.Active then onToggleUB(false) end
+    if Config.amblatant then onToggleYTTA(false) end
+    if Config.CloudyV1.Active then onToggleCloudyV1(false) end
+    if Config.Cloudy1N.Active then onToggleCloudy1N(false) end
+    if Config.InstantFishing and Config.InstantFishing.Active then Config.InstantFishing.Active = false end
 
     enableNotifDelay()
     enableBlockNotif()
