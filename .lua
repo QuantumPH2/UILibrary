@@ -1,4 +1,4 @@
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/QuantumPH2/UI/refs/heads/main/NewEraUI.lua"))()
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/CloudyPH2/UI/refs/heads/main/NewEraUI.lua"))()
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local TeleportService = game:GetService("TeleportService")
@@ -8,12 +8,12 @@ local mapName = success and info.Name or "Unknown"
 local isSupported = supportedMaps[tostring(game.PlaceId)] ~= nil
 
 local Window = Fluent:CreateWindow({
-    Title = "Quantum HUB",
+    Title = "Cloudy",
     SubTitle = "versi 1.0.4.0 Fish it",
     MinWindowSize = Vector2.new(440, 250),
     Size = UDim2.fromOffset(525, 290),
     Acrylic = false,
-    Theme = "Emerald",
+    Theme = "Cloudy",
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
@@ -35,12 +35,12 @@ local ConfigTab    = Window:AddTab({ Title = "Configuration", Icon = "solar/sett
 pcall(function()
     if Fluent.SaveManager then
         Fluent.SaveManager:SetLibrary(Fluent)
-        Fluent.SaveManager:SetFolder("QuantumHUB/FishDawg")
+        Fluent.SaveManager:SetFolder("CloudyHUB/FishDawg")
         Fluent.SaveManager:BuildConfigSection(ConfigTab)
     end
     if Fluent.InterfaceManager then
         Fluent.InterfaceManager:SetLibrary(Fluent)
-        Fluent.InterfaceManager:SetFolder("QuantumHUB/FishDawg")
+        Fluent.InterfaceManager:SetFolder("CloudyHUB/FishDawg")
         Fluent.InterfaceManager:BuildInterfaceSection(ConfigTab)
     end
 end)
@@ -277,8 +277,8 @@ local loadedCount, failedCount = loadRemotes()
 local Config = {
     AutoCatch = false, CatchDelay = 0.7,
     UB = {Active = false, UseCastMode = true, CastMode = "Perfect", Settings = {CastDelay = 0.3, HookDelay = 0.3}, Remotes = {}, Stats = {castCount = 0, startTime = 0.0}},
-    QuantumV1 = {Active = false, UseCastMode = true, CastMode = "Perfect", CastDelay = 0.3, HookDelay = 2.8671},
-    Quantum1N = {Active = false, UseCastMode = true, CastMode = "Perfect", CastDelay = 0.3, HookDelay = 2.8671},
+    CloudyV1 = {Active = false, UseCastMode = true, CastMode = "Perfect", CastDelay = 0.3, HookDelay = 2.8671},
+    Cloudy1N = {Active = false, UseCastMode = true, CastMode = "Perfect", CastDelay = 0.3, HookDelay = 2.8671},
     InstantFishing = {Active = false, UseCastMode = true, CastMode = "Perfect", CastDelay = 0.3, HookDelay = 0.05},
     amblatant = false, antiOKOK = false, autoFishing = false, PerfectionEnchant = false,
     AutoSellState = false, AutoSellMethod = "Delay", AutoSellValue = 50,
@@ -397,8 +397,10 @@ end
 
 if FishCaughtRemote and FishCaughtRemote:IsA("RemoteEvent") then
     _G.FishCaughtConn = FishCaughtRemote.OnClientEvent:Connect(function(fishId, _, _, fishData)
+        if _G.QH_EnableFishNotif == false then return end
         task.spawn(function()
             task.wait(0.1)
+            if _G.QH_EnableFishNotif == false then return end
 
             local quantity = 1
             if type(fishData) == "table" and fishData.Quantity then
@@ -423,6 +425,9 @@ else
     warn("[QH] Remote RE/FishCaught tidak ditemukan untuk hook notifikasi!")
 end
 
+local function TriggerFishNotif(notifArgs, isReplay)
+    if _G.QH_EnableFishNotif == false then return end
+    if not notifArgs or #notifArgs == 0 then return end
     pcall(function()
         local ctrlFolder = ReplicatedStorage:FindFirstChild("Controllers")
         if not ctrlFolder then return end
@@ -435,6 +440,7 @@ end
             ctrl:DeliverNotification({Type = "Item", Id = id, Metadata = meta})
         end
     end)
+end
 
 _G.QHInstances = _G.QHInstances or {}
 _G.QHInstances[_instanceId] = _G.QHInstances[_instanceId] or {
@@ -1400,11 +1406,13 @@ local function triggerRainbowGoldenUpdate(notifData)
 end
 
 local function replayAmblatantNotif()
-    local isQuantumSpecial = (Config.amblatant == true) or (Config.Quantum1N and Config.Quantum1N.Active == true)
-    if not isQuantumSpecial then return end
+    if _G.QH_EnableFishNotif == false then return end
+    local isCloudySpecial = (Config.amblatant == true) or (Config.Cloudy1N and Config.Cloudy1N.Active == true)
+    if not isCloudySpecial then return end
 
     task.spawn(function()
-        if not ((Config.amblatant == true) or (Config.Quantum1N and Config.Quantum1N.Active == true)) then return end
+        if _G.QH_EnableFishNotif == false then return end
+        if not ((Config.amblatant == true) or (Config.Cloudy1N and Config.Cloudy1N.Active == true)) then return end
 
         local xr_visual = GetServerRemote("RE/CaughtFishVisual")
 
@@ -1427,7 +1435,7 @@ local function replayAmblatantNotif()
             pcall(function() triggerRainbowGoldenUpdate(notifData) end)
             local repeatCount = math.max(1, Config.YTTA.NotifCount or 3)
             for i = 1, repeatCount do
-                if not ((Config.amblatant == true) or (Config.Quantum1N and Config.Quantum1N.Active == true)) then break end
+                if not ((Config.amblatant == true) or (Config.Cloudy1N and Config.Cloudy1N.Active == true)) then break end
                 local nd = notifData
                 if #_fishNotifHistory > 0 then
                     nd = _fishNotifHistory[((i - 1) % #_fishNotifHistory) + 1]
@@ -1451,28 +1459,37 @@ end
 
 local function CompleteFishing(quality)
     local q = quality or Config.CatchQuality or "Perfect"
-    if Config.UB.Remotes.FishingCompletedRE and Config.UB.Remotes.FishingCompletedRE.Parent then
-        pcall(function() Config.UB.Remotes.FishingCompletedRE:FireServer(q) end)
-    elseif Config.UB.Remotes.FishingCompleted and Config.UB.Remotes.FishingCompleted.Parent then
-        pcall(function() Config.UB.Remotes.FishingCompleted:InvokeServer(q) end)
+    local re = Config.UB.Remotes.FishingCompletedRE
+    local rf = Config.UB.Remotes.FishingCompleted
+    if re and re.Parent then
+        pcall(re.FireServer, re, q)
+    elseif rf and rf.Parent then
+        task.spawn(function() pcall(rf.InvokeServer, rf, q) end)
     end
 end
 
 local function ub_loop()
+    local remotes = Config.UB.Remotes
     while Config.UB.Active do
         local ok, err = pcall(function()
             local currentTime = tick()
             task.wait(GetCastingWait(Config.UB.Settings.CastDelay))
             needCast = false
-            pcall(function() if Config.UB.Remotes.ChargeFishingRod and Config.UB.Remotes.ChargeFishingRod.Parent then Config.UB.Remotes.ChargeFishingRod:InvokeServer({[1] = currentTime}) end end)
+            local charge = remotes.ChargeFishingRod
+            if charge and charge.Parent then
+                task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
+            end
             local qualityParam = GetCastingQualityParam(Config.UB.UseCastMode, Config.UB.CastMode)
-            pcall(function() if Config.UB.Remotes.RequestMinigame and Config.UB.Remotes.RequestMinigame.Parent then Config.UB.Remotes.RequestMinigame:InvokeServer(1, qualityParam, currentTime) end end)
+            local reqMinigame = remotes.RequestMinigame
+            if reqMinigame and reqMinigame.Parent then
+                task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
+            end
             local hookDelay = Config.amblatant and Config.YTTA.Settings.QHDelay or (Config.UB.Settings.HookDelay or 0.3)
             task.wait(math.max(hookDelay, 0.001))
             Config.CatchQuality = GetCatchQuality(Config.UB.CastMode or Config.CastMode)
             CompleteFishing(Config.CatchQuality)
             if Config.amblatant then
-                replayAmblatantNotif()
+                task.spawn(replayAmblatantNotif)
             end
             blatantFishCycleCount = blatantFishCycleCount + 1
         end)
@@ -1480,47 +1497,62 @@ local function ub_loop()
     end
 end
 
-local function quantum_v1_loop()
-    while Config.QuantumV1.Active do
+local function cloudy_v1_loop()
+    local remotes = Config.UB.Remotes
+    while Config.CloudyV1.Active do
         local ok, err = pcall(function()
             local currentTime = tick()
-            task.wait(GetCastingWait(Config.QuantumV1.CastDelay))
+            task.wait(GetCastingWait(Config.CloudyV1.CastDelay))
             needCast = false
-            pcall(function() if Config.UB.Remotes.ChargeFishingRod and Config.UB.Remotes.ChargeFishingRod.Parent then Config.UB.Remotes.ChargeFishingRod:InvokeServer({[1] = currentTime}) end end)
-            local qualityParam = GetCastingQualityParam(Config.QuantumV1.UseCastMode, Config.QuantumV1.CastMode)
-            pcall(function() if Config.UB.Remotes.RequestMinigame and Config.UB.Remotes.RequestMinigame.Parent then Config.UB.Remotes.RequestMinigame:InvokeServer(1, qualityParam, currentTime) end end)
-            task.wait(math.max(Config.QuantumV1.HookDelay, 0.001))
-            Config.CatchQuality = GetCatchQuality(Config.QuantumV1.CastMode or Config.CastMode)
+            local charge = remotes.ChargeFishingRod
+            if charge and charge.Parent then
+                task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
+            end
+            local qualityParam = GetCastingQualityParam(Config.CloudyV1.UseCastMode, Config.CloudyV1.CastMode)
+            local reqMinigame = remotes.RequestMinigame
+            if reqMinigame and reqMinigame.Parent then
+                task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
+            end
+            task.wait(math.max(Config.CloudyV1.HookDelay, 0.001))
+            Config.CatchQuality = GetCatchQuality(Config.CloudyV1.CastMode or Config.CastMode)
             CompleteFishing(Config.CatchQuality)
             blatantFishCycleCount = blatantFishCycleCount + 1
         end)
-        if not ok then warn("[QH] Quantum V1 error: " .. tostring(err)); task.wait(0.02) end
+        if not ok then warn("[QH] Cloudy V1 error: " .. tostring(err)); task.wait(0.02) end
     end
 end
 
-local function quantum_1n_loop()
-    while Config.Quantum1N.Active do
+local function cloudy_1n_loop()
+    local remotes = Config.UB.Remotes
+    while Config.Cloudy1N.Active do
         local ok, err = pcall(function()
             local currentTime = tick()
-            task.wait(GetCastingWait(Config.Quantum1N.CastDelay))
+            task.wait(GetCastingWait(Config.Cloudy1N.CastDelay))
             needCast = false
-            pcall(function() if Config.UB.Remotes.ChargeFishingRod and Config.UB.Remotes.ChargeFishingRod.Parent then Config.UB.Remotes.ChargeFishingRod:InvokeServer({[1] = currentTime}) end end)
-            local qualityParam = GetCastingQualityParam(Config.Quantum1N.UseCastMode, Config.Quantum1N.CastMode)
-            pcall(function() if Config.UB.Remotes.RequestMinigame and Config.UB.Remotes.RequestMinigame.Parent then Config.UB.Remotes.RequestMinigame:InvokeServer(1, qualityParam, currentTime) end end)
-            task.wait(math.max(Config.Quantum1N.HookDelay, 0.001))
-            Config.CatchQuality = GetCatchQuality(Config.Quantum1N.CastMode or Config.CastMode)
+            local charge = remotes.ChargeFishingRod
+            if charge and charge.Parent then
+                task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
+            end
+            local qualityParam = GetCastingQualityParam(Config.Cloudy1N.UseCastMode, Config.Cloudy1N.CastMode)
+            local reqMinigame = remotes.RequestMinigame
+            if reqMinigame and reqMinigame.Parent then
+                task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
+            end
+            task.wait(math.max(Config.Cloudy1N.HookDelay, 0.001))
+            Config.CatchQuality = GetCatchQuality(Config.Cloudy1N.CastMode or Config.CastMode)
             CompleteFishing(Config.CatchQuality)
-            replayAmblatantNotif()
+            task.spawn(replayAmblatantNotif)
+            blatantFishCycleCount = blatantFishCycleCount + 1
         end)
-        if not ok then warn("[QH] Quantum 1N error: " .. tostring(err)); task.wait(0.02) end
+        if not ok then warn("[QH] Cloudy 1N error: " .. tostring(err)); task.wait(0.02) end
     end
 end
 
-local function onToggleQuantum1N(value)
+local function onToggleCloudy1N(value)
     if value then
         if Config.UB.Active then onToggleUB(false) end
         if Config.amblatant then onToggleYTTA(false) end
-        if Config.QuantumV1.Active then onToggleQuantumV1(false) end
+        if Config.CloudyV1.Active then onToggleCloudyV1(false) end
         if Config.InstantFishing and Config.InstantFishing.Active then Config.InstantFishing.Active = false end
         if Config.InstantV2 and Config.InstantV2.Active then stopInstantV2() end
 
@@ -1531,24 +1563,24 @@ local function onToggleQuantum1N(value)
         equipRod()
         task.wait(0.5)
         UB_init()
-        Config.Quantum1N.Active = true
+        Config.Cloudy1N.Active = true
         needCast = true
         _G.NotifQueue = {}
         _G.NotifActive = 0
         isCaught = false
         Config.UB.Stats.startTime = tick()
-        Tasks.quantum1ntask = task.spawn(quantum_1n_loop)
-        NotifySuccess("Quantum 1N", "Aktif!")
+        Tasks.cloudy1ntask = task.spawn(cloudy_1n_loop)
+        NotifySuccess("Cloudy 1N", "Aktif!")
     else
-        Config.Quantum1N.Active = false
+        Config.Cloudy1N.Active = false
         _G.NotifQueue = {}
         _G.NotifActive = 0
         _currentNotifDelayDuration = NOTIF_DELAY_DURATION
         disableNotifDelay()
         safeFire(function() if Config.UB.Remotes.CancelFishingInputs then CallRemote(Config.UB.Remotes.CancelFishingInputs) end end)
         task.wait(0.3)
-        if Tasks.quantum1ntask then pcall(function() task.cancel(Tasks.quantum1ntask) end); Tasks.quantum1ntask = nil end
-        NotifyWarning("Quantum 1N", "Dimatikan.")
+        if Tasks.cloudy1ntask then pcall(function() task.cancel(Tasks.cloudy1ntask) end); Tasks.cloudy1ntask = nil end
+        NotifyWarning("Cloudy 1N", "Dimatikan.")
     end
 end
 
@@ -1560,7 +1592,7 @@ local function UB_start()
     _G.NotifQueue = {}; _G.NotifActive = 0; isCaught = false
     Config.UB.Stats.startTime = tick()
     Tasks.ubtask = task.spawn(ub_loop)
-    NotifySuccess("Quantum Fishing", "Aktif!")
+    NotifySuccess("Cloudy Fishing", "Aktif!")
 end
 
 local function UB_stop()
@@ -1572,14 +1604,14 @@ local function UB_stop()
     safeFire(function() if Config.UB.Remotes.CancelFishingInputs then CallRemote(Config.UB.Remotes.CancelFishingInputs) end end)
     task.wait(0.3)
     if Tasks.ubtask then pcall(function() task.cancel(Tasks.ubtask) end); Tasks.ubtask = nil end
-    NotifyWarning("Quantum Fishing", "Dimatikan.")
+    NotifyWarning("Cloudy Fishing", "Dimatikan.")
 end
 
 local function onToggleUB(value)
     if value then
-        if Config.Quantum1N and Config.Quantum1N.Active then onToggleQuantum1N(false) end
+        if Config.Cloudy1N and Config.Cloudy1N.Active then onToggleCloudy1N(false) end
         if Config.amblatant then onToggleYTTA(false) end
-        if Config.QuantumV1 and Config.QuantumV1.Active then onToggleQuantumV1(false) end
+        if Config.CloudyV1 and Config.CloudyV1.Active then onToggleCloudyV1(false) end
         if Config.InstantFishing and Config.InstantFishing.Active then Config.InstantFishing.Active = false end
         if Config.InstantV2 and Config.InstantV2.Active then stopInstantV2() end
 
@@ -1594,8 +1626,8 @@ end
 local function onToggleYTTA(value)
     Config.amblatant = value
     if value then
-        if Config.Quantum1N and Config.Quantum1N.Active then onToggleQuantum1N(false) end
-        if Config.QuantumV1 and Config.QuantumV1.Active then onToggleQuantumV1(false) end
+        if Config.Cloudy1N and Config.Cloudy1N.Active then onToggleCloudy1N(false) end
+        if Config.CloudyV1 and Config.CloudyV1.Active then onToggleCloudyV1(false) end
         if Config.InstantFishing and Config.InstantFishing.Active then Config.InstantFishing.Active = false end
         if Config.InstantV2 and Config.InstantV2.Active then stopInstantV2() end
 
@@ -1607,7 +1639,7 @@ local function onToggleYTTA(value)
         _G.NotifQueue = {}; _G.NotifActive = 0; isCaught = false
         Config.UB.Stats.startTime = tick()
         Tasks.ubtask = task.spawn(ub_loop)
-        NotifySuccess("Quantum Max", "Aktif!")
+        NotifySuccess("Cloudy Max", "Aktif!")
     else
         Config.amblatant = false
         Config.UB.Active = false; _G.NotifQueue = {}; _G.NotifActive = 0
@@ -1615,15 +1647,15 @@ local function onToggleYTTA(value)
         safeFire(function() if Config.UB.Remotes.CancelFishingInputs then CallRemote(Config.UB.Remotes.CancelFishingInputs) end end)
         task.wait(0.3)
         if Tasks.ubtask then pcall(function() task.cancel(Tasks.ubtask) end); Tasks.ubtask = nil end
-        NotifyWarning("Quantum Max", "Dimatikan.")
+        NotifyWarning("Cloudy Max", "Dimatikan.")
     end
 end
 
-local function onToggleQuantumV1(value)
+local function onToggleCloudyV1(value)
     if value then
         if Config.UB.Active then onToggleUB(false) end
         if Config.amblatant then onToggleYTTA(false) end
-        if Config.Quantum1N and Config.Quantum1N.Active then onToggleQuantum1N(false) end
+        if Config.Cloudy1N and Config.Cloudy1N.Active then onToggleCloudy1N(false) end
         if Config.InstantFishing and Config.InstantFishing.Active then Config.InstantFishing.Active = false end
         if Config.InstantV2 and Config.InstantV2.Active then stopInstantV2() end
 
@@ -1632,24 +1664,24 @@ local function onToggleQuantumV1(value)
         equipRod()
         task.wait(0.5)
         UB_init()
-        Config.QuantumV1.Active = true
+        Config.CloudyV1.Active = true
         needCast = true
         _G.NotifQueue = {}
         _G.NotifActive = 0
         isCaught = false
         Config.UB.Stats.startTime = tick()
-        Tasks.quantumv1task = task.spawn(quantum_v1_loop)
-        NotifySuccess("Quantum V1", "Aktif!")
+        Tasks.cloudyv1task = task.spawn(cloudy_v1_loop)
+        NotifySuccess("Cloudy V1", "Aktif!")
     else
-        Config.QuantumV1.Active = false
+        Config.CloudyV1.Active = false
         _G.NotifQueue = {}
         _G.NotifActive = 0
         _currentNotifDelayDuration = NOTIF_DELAY_DURATION
         disableNotifDelay()
         safeFire(function() if Config.UB.Remotes.CancelFishingInputs then CallRemote(Config.UB.Remotes.CancelFishingInputs) end end)
         task.wait(0.3)
-        if Tasks.quantumv1task then pcall(function() task.cancel(Tasks.quantumv1task) end); Tasks.quantumv1task = nil end
-        NotifyWarning("Quantum V1", "Dimatikan.")
+        if Tasks.cloudyv1task then pcall(function() task.cancel(Tasks.cloudyv1task) end); Tasks.cloudyv1task = nil end
+        NotifyWarning("Cloudy V1", "Dimatikan.")
     end
 end
 
@@ -1658,7 +1690,7 @@ UB_init()
 task.spawn(function()
     while true do
         task.wait(5)
-        local anyActive = Config.UB.Active or Config.QuantumV1.Active
+        local anyActive = Config.UB.Active or Config.CloudyV1.Active
         if anyActive and lastTimeFishCaught ~= nil and os.clock() - lastTimeFishCaught >= 20 and blatantFishCycleCount > 1 then
             needCast = true; saveCount = 0; blatantFishCycleCount = 1; lastTimeFishCaught = os.clock()
             safeFire(function() if Config.UB.Remotes.CancelFishingInputs then CallRemote(Config.UB.Remotes.CancelFishingInputs) end end)
@@ -2029,9 +2061,9 @@ local function runMultiEventTP()
     destroyEventPlatform()
 end
 
-local function CreateQuantumPanel()
+local function CreateCloudyPanel()
     local gui = Instance.new("ScreenGui")
-    gui.Name = "QuantumPanelV4"
+    gui.Name = "CloudyPanelV4"
     gui.IgnoreGuiInset = true
     gui.ResetOnSpawn = false
     gui.Enabled = true
@@ -2210,7 +2242,7 @@ end)
 
     return gui
 end
-local statsPanelGui = CreateQuantumPanel()
+local statsPanelGui = CreateCloudyPanel()
 
 pcall(function()
     for _, v in pairs(getconnections(LocalPlayer.Idled)) do
@@ -2628,10 +2660,10 @@ local cachedNameLabel = nil
 local cachedLevelLabel = nil
 
 _G.CustomNameActive = true
-_G.CustomNameText = "QUANTUM"
+_G.CustomNameText = "CLOUDY"
 _G.CustomLevelActive = true
 _G.CustomLevelText = "Lvl. 969"
-_G.QuantumTitleActive = false
+_G.CloudyTitleActive = false
 
 local customOverheadConnection = nil
 local customOverheadCharConnection = nil
@@ -2670,10 +2702,10 @@ end
 local currentTitleGui = nil
 local currentTitleGradient = nil
 
-local function removeQuantumTitle()
-    if _G.QuantumTitleRenderConn then
-        pcall(function() _G.QuantumTitleRenderConn:Disconnect() end)
-        _G.QuantumTitleRenderConn = nil
+local function removeCloudyTitle()
+    if _G.CloudyTitleRenderConn then
+        pcall(function() _G.CloudyTitleRenderConn:Disconnect() end)
+        _G.CloudyTitleRenderConn = nil
     end
     currentTitleGradient = nil
     if currentTitleGui then
@@ -2683,16 +2715,16 @@ local function removeQuantumTitle()
     local char = LocalPlayer.Character
     if char then
         for _, obj in pairs(char:GetDescendants()) do
-            if obj.Name == "QuantumHubTitleBillboard" then
+            if obj.Name == "CloudyHubTitleBillboard" then
                 pcall(function() obj:Destroy() end)
             end
         end
     end
 end
 
-local function createQuantumTitleTag(char)
+local function createCloudyTitleTag(char)
     if not char then char = LocalPlayer.Character end
-    if not char or not _G.QuantumTitleActive then return end
+    if not char or not _G.CloudyTitleActive then return end
 
     local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
     if not head then return end
@@ -2701,10 +2733,10 @@ local function createQuantumTitleTag(char)
         return
     end
 
-    removeQuantumTitle()
+    removeCloudyTitle()
 
     local bbg = Instance.new("BillboardGui")
-    bbg.Name = "QuantumHubTitleBillboard"
+    bbg.Name = "CloudyHubTitleBillboard"
     bbg.Adornee = head
     bbg.Size = UDim2.new(0, 220, 0, 36)
     bbg.StudsOffset = Vector3.new(0, 3.3, 0)
@@ -2714,10 +2746,10 @@ local function createQuantumTitleTag(char)
     bbg.MaxDistance = 150
 
     local label = Instance.new("TextLabel")
-    label.Name = "QuantumHubTitleLabel"
+    label.Name = "CloudyHubTitleLabel"
     label.Size = UDim2.new(1, 0, 1, 0)
     label.BackgroundTransparency = 1
-    label.Text = "✦ QUANTUM HUB ✦"
+    label.Text = "✦ CLOUDY HUB ✦"
     label.Font = Enum.Font.BuilderSansBold or Enum.Font.GothamBold
     label.TextSize = 16
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -2726,14 +2758,14 @@ local function createQuantumTitleTag(char)
     label.Parent = bbg
 
     local stroke = Instance.new("UIStroke")
-    stroke.Name = "QuantumHubTitleStroke"
+    stroke.Name = "CloudyHubTitleStroke"
     stroke.Thickness = 1.2
     stroke.Color = Color3.fromRGB(0, 255, 136)
     stroke.Transparency = 0.3
     stroke.Parent = label
 
     local gradient = Instance.new("UIGradient")
-    gradient.Name = "QuantumHubTitleGradient"
+    gradient.Name = "CloudyHubTitleGradient"
     gradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0.0, Color3.fromRGB(0, 255, 136)),
         ColorSequenceKeypoint.new(0.25, Color3.fromRGB(8, 20, 12)),
@@ -2748,14 +2780,14 @@ local function createQuantumTitleTag(char)
     bbg.Parent = head
 end
 
-local function startQuantumTitleAnimation()
-    if _G.QuantumTitleRenderConn then
-        pcall(function() _G.QuantumTitleRenderConn:Disconnect() end)
-        _G.QuantumTitleRenderConn = nil
+local function startCloudyTitleAnimation()
+    if _G.CloudyTitleRenderConn then
+        pcall(function() _G.CloudyTitleRenderConn:Disconnect() end)
+        _G.CloudyTitleRenderConn = nil
     end
 
-    _G.QuantumTitleRenderConn = RunService.RenderStepped:Connect(function()
-        if not _G.QuantumTitleActive then return end
+    _G.CloudyTitleRenderConn = RunService.RenderStepped:Connect(function()
+        if not _G.CloudyTitleActive then return end
         if currentTitleGradient and currentTitleGradient.Parent then
             local t = (tick() * 0.7) % 2 - 1
             currentTitleGradient.Offset = Vector2.new(t, 0)
@@ -2780,10 +2812,10 @@ local function applyOverheadVisuals(char)
 
     pcall(function()
         for _, bbg in ipairs(char:GetDescendants()) do
-            if bbg:IsA("BillboardGui") and bbg.Name ~= "QuantumHubTitleBillboard" then
+            if bbg:IsA("BillboardGui") and bbg.Name ~= "CloudyHubTitleBillboard" then
                 local labels = {}
                 for _, child in ipairs(bbg:GetDescendants()) do
-                    if child:IsA("TextLabel") and child.Name ~= "QuantumHubTitleLabel" then
+                    if child:IsA("TextLabel") and child.Name ~= "CloudyHubTitleLabel" then
                         table.insert(labels, child)
                     end
                 end
@@ -2841,7 +2873,7 @@ local function applyOverheadVisuals(char)
                         end
                     end
                 end
-            elseif bbg:IsA("TextLabel") and bbg.Parent and bbg.Parent.Name == "Head" and bbg.Name ~= "QuantumHubTitleLabel" then
+            elseif bbg:IsA("TextLabel") and bbg.Parent and bbg.Parent.Name == "Head" and bbg.Name ~= "CloudyHubTitleLabel" then
                 local lbl = bbg
                 local n = lbl.Name:lower()
                 local t = lbl.Text:lower()
@@ -2872,18 +2904,18 @@ local function hookCharacterOverhead(char)
     if not char then return end
     applyOverheadVisuals(char)
 
-    if _G.QuantumTitleActive then
-        createQuantumTitleTag(char)
-        startQuantumTitleAnimation()
+    if _G.CloudyTitleActive then
+        createCloudyTitleTag(char)
+        startCloudyTitleAnimation()
     end
 
     if customOverheadConnection then pcall(function() customOverheadConnection:Disconnect() end) end
     customOverheadConnection = char.DescendantAdded:Connect(function(desc)
-        if desc.Name:find("QuantumHubTitle") then return end
+        if desc.Name:find("CloudyHubTitle") then return end
         if desc:IsA("BillboardGui") or desc:IsA("TextLabel") or desc:IsA("Humanoid") then
             task.defer(function()
                 pcall(function()
-                    if not desc or not desc.Parent or desc.Name:find("QuantumHubTitle") then return end
+                    if not desc or not desc.Parent or desc.Name:find("CloudyHubTitle") then return end
                     applyOverheadVisuals(char)
                 end)
             end)
@@ -2902,8 +2934,8 @@ local function setupChatSpoof()
                 if message.TextSource and message.TextSource.UserId == LocalPlayer.UserId then
                     local nameToDisplay = (_G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "") and _G.CustomNameText or LocalPlayer.DisplayName
                     local prefixStr = ""
-                    if _G.QuantumTitleActive then
-                        prefixStr = "<font color='#00FF88'><b>[Quantum HUB]</b></font> "
+                    if _G.CloudyTitleActive then
+                        prefixStr = "<font color='#00FF88'><b>[Cloudy HUB]</b></font> "
                     end
                     props.PrefixText = prefixStr .. "<font color='#00FFAA'><b>" .. nameToDisplay .. "</b></font>:"
                 end
@@ -2919,7 +2951,7 @@ local function setupChatSpoof()
         local function hookChatGui(chatGui)
             if not chatGui then return end
             chatGui.DescendantAdded:Connect(function(desc)
-                if desc:IsA("TextLabel") and (_G.CustomNameActive or _G.QuantumTitleActive) then
+                if desc:IsA("TextLabel") and (_G.CustomNameActive or _G.CloudyTitleActive) then
                     task.defer(function()
                         pcall(function()
                             local text = desc.Text
@@ -2928,8 +2960,8 @@ local function setupChatSpoof()
                             local fakeName = (_G.CustomNameActive and _G.CustomNameText and _G.CustomNameText ~= "") and _G.CustomNameText or realDisp
                             if text:find(realDisp, 1, true) or text:find(realName, 1, true) then
                                 local newText = text:gsub(realDisp, fakeName):gsub(realName, fakeName)
-                                if _G.QuantumTitleActive and not newText:find("Quantum HUB", 1, true) then
-                                    newText = "[Quantum HUB] " .. newText
+                                if _G.CloudyTitleActive and not newText:find("Cloudy HUB", 1, true) then
+                                    newText = "[Cloudy HUB] " .. newText
                                 end
                                 desc.Text = newText
                             end
@@ -2948,7 +2980,7 @@ local function setupChatSpoof()
 end
 
 local function ApplyCustomName(name)
-    if not name or name == "" then name = "QUANTUM" end
+    if not name or name == "" then name = "CLOUDY" end
     _G.CustomNameActive = true
     _G.CustomNameText = name
     pcall(function() LocalPlayer.DisplayName = name end)
@@ -2981,18 +3013,18 @@ local function RemoveCustomLevel()
     NotifyInfo("Custom Level", "Level direset ke normal (" .. GetRealPlayerLevel() .. ")")
 end
 
-local function SetQuantumTitle(enabled)
-    _G.QuantumTitleActive = enabled
+local function SetCloudyTitle(enabled)
+    _G.CloudyTitleActive = enabled
     local char = LocalPlayer.Character
     if enabled then
         if char then
-            createQuantumTitleTag(char)
-            startQuantumTitleAnimation()
+            createCloudyTitleTag(char)
+            startCloudyTitleAnimation()
         end
-        NotifySuccess("Title Tag", "Quantum HUB Title aktif! (Ultra Smooth)")
+        NotifySuccess("Title Tag", "Cloudy HUB Title aktif! (Ultra Smooth)")
     else
-        removeQuantumTitle()
-        NotifyInfo("Title Tag", "Quantum HUB Title dimatikan.")
+        removeCloudyTitle()
+        NotifyInfo("Title Tag", "Cloudy HUB Title dimatikan.")
     end
 end
 
@@ -3159,7 +3191,7 @@ if PlayersTab then
 
         local Section_PlayersTab_3 = PlayersTab:AddSection("Custom Name & Level")
 
-        local customName = "QUANTUM"
+        local customName = "CLOUDY"
         local customLevel = "Lvl. 969"
 
         Section_PlayersTab_3:AddInput("Input_CustomFakeName", {
@@ -3167,7 +3199,7 @@ if PlayersTab then
             Description = "Nama samaran di kepala & chat (hanya terlihat di kamu)",
             Value = customName,
             Default = customName,
-            Placeholder = "QUANTUM",
+            Placeholder = "CLOUDY",
             Icon = "lucide:user-x",
             Callback = function(text)
                 if text and text ~= "" then
@@ -3232,12 +3264,12 @@ if PlayersTab then
             end
         })
 
-        Section_PlayersTab_3:AddToggle("Toggle_QuantumHubTitle", {
-            Title = "Quantum HUB Title Tag",
+        Section_PlayersTab_3:AddToggle("Toggle_CloudyHubTitle", {
+            Title = "Cloudy HUB Title Tag",
             Description = "Title berkilau gradien hijau-hitam bergerak di atas kepala",
             Default = false,
             Callback = function(val)
-                SetQuantumTitle(val)
+                SetCloudyTitle(val)
             end
         })
 
@@ -3652,7 +3684,7 @@ if KaitunTab then
             local title = Instance.new("TextLabel")
             title.Size = UDim2.new(0.55, 0, 1, 0)
             title.BackgroundTransparency = 1
-            title.Text = "⚡ QUANTUM KAITUN"
+            title.Text = "⚡ CLOUDY KAITUN"
             title.TextColor3 = Color3.fromRGB(255, 255, 255)
             title.Font = Enum.Font.GothamBold
             title.TextSize = 13
@@ -5700,7 +5732,7 @@ end
 
 if ExclusiveTab then
     pcall(function()
-        local Section_ExclusiveTab_1 = ExclusiveTab:AddSection("Quantum Fishing (Ultra Blatant)")
+        local Section_ExclusiveTab_1 = ExclusiveTab:AddSection("Cloudy Fishing (Ultra Blatant)")
         Section_ExclusiveTab_1:AddToggle("Toggle_UseCastMode", {
             Title = "Use Cast Mode",
             Description = "Enable Perfect/Normal catch quality mode",
@@ -5727,9 +5759,9 @@ if ExclusiveTab then
                 Config.UB.Settings.HookDelay = num
             end, Finished = true
         })
-        Section_ExclusiveTab_1:AddToggle("Toggle_QuantumFishingBeta", { Title = "Quantum Fishing [Beta]", Default = false, Callback = function(val) needCast = true; onToggleUB(val) end })
+        Section_ExclusiveTab_1:AddToggle("Toggle_CloudyFishingBeta", { Title = "Cloudy Fishing [Beta]", Default = false, Callback = function(val) needCast = true; onToggleUB(val) end })
 
-        local Section_ExclusiveTab_2 = ExclusiveTab:AddSection("Quantum Max")
+        local Section_ExclusiveTab_2 = ExclusiveTab:AddSection("Cloudy Max")
         Section_ExclusiveTab_2:AddDropdown("Dropdown_CastMode_2", {
             Title = "Cast Mode",
             Values = {"Perfect", "Normal"},
@@ -5743,8 +5775,8 @@ if ExclusiveTab then
                 Config.UB.Settings.CastDelay = num
             end, Finished = true
         })
-        Section_ExclusiveTab_2:AddToggle("Toggle_QuantumYTTA", { Title = "Quantum YTTA", Default = false, Callback = function(val) onToggleYTTA(val) end })
-        Section_ExclusiveTab_2:AddSlider("Slider_JumlahNotifQuantumYTTA", { Title = "Jumlah Notif Quantum YTTA", Min = 1, Max = 30, Default = 3, Rounding = 0, Callback = function(val) Config.YTTA.NotifCount = val end })
+        Section_ExclusiveTab_2:AddToggle("Toggle_CloudyYTTA", { Title = "Cloudy YTTA", Default = false, Callback = function(val) onToggleYTTA(val) end })
+        Section_ExclusiveTab_2:AddSlider("Slider_JumlahNotifCloudyYTTA", { Title = "Jumlah Notif Cloudy YTTA", Min = 1, Max = 30, Default = 3, Rounding = 0, Callback = function(val) Config.YTTA.NotifCount = val end })
         Section_ExclusiveTab_2:AddSlider("Slider_DelayAntarCatch001detik", { Title = "Delay Antar Catch (0.01 detik)", Min = 0, Max = 300, Default = 10, Rounding = 0, Callback = function(val) Config.YTTA.NotifDelay = val / 100 end })
 
         local Section_ExclusiveTab_3 = ExclusiveTab:AddSection("Legit Fishing")
@@ -5779,68 +5811,68 @@ if ExclusiveTab then
             end
         })
 
-        local Section_ExclusiveTab_4 = ExclusiveTab:AddSection("Quantum V1 [NEW]")
+        local Section_ExclusiveTab_4 = ExclusiveTab:AddSection("Cloudy V1 [NEW]")
         Section_ExclusiveTab_4:AddToggle("Toggle_UseCastMode_2", {
             Title = "Use Cast Mode",
             Description = "Enable Perfect/Normal catch quality",
             Default = true,
-            Callback = function(val) Config.QuantumV1.UseCastMode = val end
+            Callback = function(val) Config.CloudyV1.UseCastMode = val end
         })
         Section_ExclusiveTab_4:AddDropdown("Dropdown_CastMode_3", {
             Title = "Cast Mode",
             Values = {"Perfect", "Normal"},
             Default = "Perfect",
-            Callback = function(val) Config.QuantumV1.CastMode = val end, Multi = false
+            Callback = function(val) Config.CloudyV1.CastMode = val end, Multi = false
         })
         Section_ExclusiveTab_4:AddInput("Input_HookDelaydetik_2", {
             Title = "Hook Delay (detik)", Placeholder = "0.3", Default = "0.3",
             Callback = function(text)
                 local num = tonumber(text); if not num or num < 0 then return end
-                Config.QuantumV1.HookDelay = num
+                Config.CloudyV1.HookDelay = num
             end, Finished = true
         })
         Section_ExclusiveTab_4:AddInput("Input_CastDelaydetik_3", {
             Title = "Cast Delay (detik)", Placeholder = "0.3", Default = "0.3",
             Callback = function(text)
                 local num = tonumber(text); if not num or num < 0 then return end
-                Config.QuantumV1.CastDelay = num
+                Config.CloudyV1.CastDelay = num
             end, Finished = true
         })
-        Section_ExclusiveTab_4:AddToggle("Toggle_QuantumV1NEW", { Title = "Quantum V1 [NEW]", Default = false, Callback = function(val) needCast = true; onToggleQuantumV1(val) end })
+        Section_ExclusiveTab_4:AddToggle("Toggle_CloudyV1NEW", { Title = "Cloudy V1 [NEW]", Default = false, Callback = function(val) needCast = true; onToggleCloudyV1(val) end })
 
-        local Section_ExclusiveTab_5 = ExclusiveTab:AddSection("Quantum 1N [NEW]")
+        local Section_ExclusiveTab_5 = ExclusiveTab:AddSection("Cloudy 1N [NEW]")
         Section_ExclusiveTab_5:AddToggle("Toggle_UseCastMode_3", {
             Title = "Use Cast Mode",
             Description = "Enable Perfect/Normal catch quality",
             Default = true,
-            Callback = function(val) Config.Quantum1N.UseCastMode = val end
+            Callback = function(val) Config.Cloudy1N.UseCastMode = val end
         })
         Section_ExclusiveTab_5:AddDropdown("Dropdown_CastMode_4", {
             Title = "Cast Mode",
             Values = {"Perfect", "Normal"},
             Default = "Perfect",
-            Callback = function(val) Config.Quantum1N.CastMode = val end, Multi = false
+            Callback = function(val) Config.Cloudy1N.CastMode = val end, Multi = false
         })
         Section_ExclusiveTab_5:AddInput("Input_HookDelaydetik_3", {
             Title = "Hook Delay (detik)", Placeholder = "0.3", Default = "0.3",
             Callback = function(text)
                 local num = tonumber(text); if not num or num < 0 then return end
-                Config.Quantum1N.HookDelay = num
+                Config.Cloudy1N.HookDelay = num
             end, Finished = true
         })
         Section_ExclusiveTab_5:AddInput("Input_CastDelaydetik_4", {
             Title = "Cast Delay (detik)", Placeholder = "0.3", Default = "0.3",
             Callback = function(text)
                 local num = tonumber(text); if not num or num < 0 then return end
-                Config.Quantum1N.CastDelay = num
+                Config.Cloudy1N.CastDelay = num
             end, Finished = true
         })
-        Section_ExclusiveTab_5:AddToggle("Toggle_Quantum1NNEW", {
-            Title = "Quantum 1N [NEW]",
+        Section_ExclusiveTab_5:AddToggle("Toggle_Cloudy1NNEW", {
+            Title = "Cloudy 1N [NEW]",
             Default = false,
             Callback = function(val)
                 needCast = true
-                onToggleQuantum1N(val)
+                onToggleCloudy1N(val)
             end
         })
 
@@ -5882,8 +5914,8 @@ if ExclusiveTab then
                 if val then
                     if Config.UB.Active then onToggleUB(false) end
                     if Config.amblatant then onToggleYTTA(false) end
-                    if Config.QuantumV1.Active then onToggleQuantumV1(false) end
-                    if Config.Quantum1N.Active then onToggleQuantum1N(false) end
+                    if Config.CloudyV1.Active then onToggleCloudyV1(false) end
+                    if Config.Cloudy1N.Active then onToggleCloudy1N(false) end
                     _G.QHBetaAnimSpeed = false
                     patchInstantBaitOverrideToCastPosition(false)
                     disableNotifDelay()
@@ -5896,21 +5928,25 @@ if ExclusiveTab then
                     _G.NotifActive = 0
                     NotifySuccess("Instant Fishing", "Aktif!")
                     Tasks.instantFishingTask = task.spawn(function()
+                        local remotes = Config.UB.Remotes
                         while Config.InstantFishing.Active do
                             local ok, err = pcall(function()
                                 local currentTime = tick()
                                 task.wait(GetCastingWait(Config.InstantFishing.CastDelay))
                                 needCast = false
-                                if Config.UB.Remotes.ChargeFishingRod then
-                                    pcall(function() Config.UB.Remotes.ChargeFishingRod:InvokeServer({[1] = currentTime}) end)
+                                local charge = remotes.ChargeFishingRod
+                                if charge and charge.Parent then
+                                    task.spawn(function() pcall(charge.InvokeServer, charge, {[1] = currentTime}) end)
                                 end
                                 local qualityParam = GetCastingQualityParam(Config.InstantFishing.UseCastMode, Config.InstantFishing.CastMode)
-                                if Config.UB.Remotes.RequestMinigame then
-                                    pcall(function() Config.UB.Remotes.RequestMinigame:InvokeServer(1, qualityParam, currentTime) end)
+                                local reqMinigame = remotes.RequestMinigame
+                                if reqMinigame and reqMinigame.Parent then
+                                    task.spawn(function() pcall(reqMinigame.InvokeServer, reqMinigame, 1, qualityParam, currentTime) end)
                                 end
                                 task.wait(math.max(Config.InstantFishing.HookDelay, 0.001))
                                 Config.CatchQuality = GetCatchQuality(Config.InstantFishing.CastMode or Config.CastMode)
                                 CompleteFishing(Config.CatchQuality)
+                                blatantFishCycleCount = blatantFishCycleCount + 1
                             end)
                             if not ok then warn("[QH] InstantFishing error: " .. tostring(err)); task.wait(0.02) end
                         end
@@ -5959,35 +5995,33 @@ local function instantV2_loop()
 
     local cfg = Config.InstantV2
 
-    local completeDelay = cfg.ReduceAnimation and (cfg.ReducedCompleteDelay or 0.001) or (cfg.CompleteDelay or 3.0)
-    local castDelay = cfg.ReduceAnimation and (cfg.ReducedCastDelay or 0.001) or (cfg.CastDelay or 0.3)
-
     while cfg.Active do
         local success, err = pcall(function()
             local t0 = workspace:GetServerTimeNow()
 
-            if Charge then
-                Charge:InvokeServer({[1] = t0})
+            if Charge and Charge.Parent then
+                task.spawn(function() pcall(Charge.InvokeServer, Charge, {[1] = t0}) end)
             end
 
             local power = 1
 
-            if Request then
-                Request:InvokeServer(1, power, t0)
+            if Request and Request.Parent then
+                task.spawn(function() pcall(Request.InvokeServer, Request, 1, power, t0) end)
             end
 
+            local completeDelay = cfg.ReduceAnimation and (cfg.ReducedCompleteDelay or 0.001) or (cfg.CompleteDelay or 3.0)
             if completeDelay > 0 then
                 task.wait(completeDelay)
             end
 
             local quality = "Perfect"
-            if Complete then
-                Complete:InvokeServer(quality)
-            end
-            if CompleteRE then
+            if CompleteRE and CompleteRE.Parent then
                 CompleteRE:FireServer(quality)
+            elseif Complete and Complete.Parent then
+                task.spawn(function() pcall(Complete.InvokeServer, Complete, quality) end)
             end
 
+            local castDelay = cfg.ReduceAnimation and (cfg.ReducedCastDelay or 0.001) or (cfg.CastDelay or 0.3)
             if castDelay > 0 then
                 task.wait(castDelay)
             end
@@ -8361,7 +8395,7 @@ if MiscTab then
             local name = gui.Name:lower()
 
             if name:find("windui") then return true end
-            if name:find("quantum") then return true end
+            if name:find("cloudy") then return true end
             if name:find("qh") then return true end
             if name:find("assets_hub") then return true end
             if name:find("buttonrezise") then return true end
@@ -8541,22 +8575,22 @@ end
         })
 
         local Section_MiscTab_3 = MiscTab:AddSection("Anti-AFK")
-Section_MiscTab_3:AddToggle("Toggle_AntiAFK", {
-    Title = "Anti-AFK", Default = false,
-    Callback = function(value)
-        _G.AntiAFKEnabled = value
-        local sange = getconnections or get_signal_cons
-        if sange then
-            for i, v in next, sange(Players.LocalPlayer.Idled) do
-                if value then
-                    v:Disable()
-                else
-                    v:Enable()
+        Section_MiscTab_3:AddToggle("Toggle_AntiAFK", {
+            Title = "Anti-AFK", Default = false,
+            Callback = function(value)
+                _G.AntiAFKEnabled = value
+                local sange = getconnections or get_signal_cons
+                if sange then
+                    for i, v in next, sange(Players.LocalPlayer.Idled) do
+                        if value then
+                            v:Disable()
+                        else
+                            v:Enable()
+                        end
+                    end
                 end
             end
-        end
-    end
-})
+        })
 
 _G.QH_FishNotifPosition = nil
 local _fishNotifPositionApplied = false
@@ -8596,12 +8630,62 @@ local function ApplyFishNotifPosition(position)
     return false
 end
 
+local function UpdateFishNotifVisibility(enabled)
+    pcall(function()
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if not playerGui then return end
+        for _, gui in ipairs(playerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") and (gui.Name == "Text Notifications" or gui.Name:find("Notification") or gui.Name == "Small Notification") then
+                gui.Enabled = enabled
+                local frame = gui:FindFirstChild("Frame") or gui:FindFirstChildWhichIsA("Frame")
+                if frame then
+                    frame.Visible = enabled
+                    if not enabled then
+                        for _, child in ipairs(frame:GetChildren()) do
+                            if child:IsA("GuiObject") then
+                                child.Visible = false
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
 local function SetupFishNotifPositionHook()
     local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 
     local function onGuiAdded(gui)
-        if gui:IsA("ScreenGui") and (gui.Name == "Text Notifications" or gui.Name:find("Notification")) then
+        if gui:IsA("ScreenGui") and (gui.Name == "Text Notifications" or gui.Name:find("Notification") or gui.Name == "Small Notification") then
+            if _G.QH_EnableFishNotif == false then
+                gui.Enabled = false
+                pcall(function()
+                    local frame = gui:FindFirstChild("Frame") or gui:FindFirstChildWhichIsA("Frame")
+                    if frame then
+                        frame.Visible = false
+                        for _, child in ipairs(frame:GetChildren()) do
+                            if child:IsA("GuiObject") then child.Visible = false end
+                        end
+                    end
+                end)
+            end
+
             task.wait(0.1)
+
+            if _G.QH_EnableFishNotif == false then
+                gui.Enabled = false
+                pcall(function()
+                    local frame = gui:FindFirstChild("Frame") or gui:FindFirstChildWhichIsA("Frame")
+                    if frame then
+                        frame.Visible = false
+                        for _, child in ipairs(frame:GetChildren()) do
+                            if child:IsA("GuiObject") then child.Visible = false end
+                        end
+                    end
+                end)
+                return
+            end
 
             if _userHasSetPosition and _G.QH_FishNotifPosition then
                 ApplyFishNotifPosition(_G.QH_FishNotifPosition)
@@ -8629,9 +8713,16 @@ pcall(function()
         if TextNotifCtrl and TextNotifCtrl.DeliverNotification then
             local oldDeliver = TextNotifCtrl.DeliverNotification
             TextNotifCtrl.DeliverNotification = function(self, data, ...)
+                if _G.QH_EnableFishNotif == false then
+                    return
+                end
 
                 if _userHasSetPosition and _G.QH_FishNotifPosition then
                     ApplyFishNotifPosition(_G.QH_FishNotifPosition)
+                end
+                if _notifDelayActive and data and type(data) == "table" then
+                    data.Duration = _currentNotifDelayDuration
+                    data.CustomDuration = _currentNotifDelayDuration
                 end
                 return oldDeliver(self, data, ...)
             end
@@ -8642,8 +8733,9 @@ end)
 pcall(function()
     if Events.fishNotif then
         Events.fishNotif.OnClientEvent:Connect(function(...)
+            if _G.QH_EnableFishNotif == false then return end
             task.delay(0.05, function()
-
+                if _G.QH_EnableFishNotif == false then return end
                 if _userHasSetPosition and _G.QH_FishNotifPosition then
                     ApplyFishNotifPosition(_G.QH_FishNotifPosition)
                 end
@@ -8662,6 +8754,7 @@ Section_MiscTab_FishNotif:AddToggle("Toggle_EnableFishNotif", {
     Default = true,
     Callback = function(val)
         _G.QH_EnableFishNotif = val
+        UpdateFishNotifVisibility(val)
         if val then
             NotifySuccess("Fish Notification", "Notifikasi ikan DIAKTIFKAN!")
         else
@@ -8959,7 +9052,7 @@ if QuestTab then
             GhostfinQuest.Phase = "Sisyphus"
             UpdateGhostfinStatus()
             NotifyInfo("Ghostfin Quest", "Phase 1: Sisyphus Statue. TP + Tracking ON.")
-            NotifyInfo("Ghostfin Quest", "Turn on Quantum Fishing Beta MANUALLY!")
+            NotifyInfo("Ghostfin Quest", "Turn on Cloudy Fishing Beta MANUALLY!")
             teleportTo("Sisyphus Statue")
 
             while GhostfinQuest.Active and not HasRod(169) do
@@ -9102,7 +9195,7 @@ if QuestTab then
             ElementQuest.Phase = "AncientJungle"
             UpdateElementStatus()
             NotifyInfo("Element Quest", "Phase 1: Ancient Jungle. Catch 1 SECRET.")
-            NotifyInfo("Element Quest", "Turn on Quantum Fishing Beta MANUALLY!")
+            NotifyInfo("Element Quest", "Turn on Cloudy Fishing Beta MANUALLY!")
             teleportTo("Ancient Jungle")
 
             while ElementQuest.Active and not HasRod(257) do
@@ -9173,7 +9266,7 @@ if QuestTab then
         local Section_QuestTab_1 = QuestTab:AddSection("Ghostfin Quest")
         Section_QuestTab_1:AddParagraph({
             Title = "Deep Sea Quest Info",
-            Content = "Requirements for Ghostfin Rod (ID 169):\n1. Catch 1 SECRET at Sisyphus Statue\n2. Catch 3 MYTHIC at Sisyphus Statue\n3. Catch 300 RARE/EPIC in Treasure Room\n4. Earn 1M Coins (manual)\n\nEnable toggle -> Auto TP + Tracking. Turn on Quantum Fishing Beta MANUALLY."
+            Content = "Requirements for Ghostfin Rod (ID 169):\n1. Catch 1 SECRET at Sisyphus Statue\n2. Catch 3 MYTHIC at Sisyphus Statue\n3. Catch 300 RARE/EPIC in Treasure Room\n4. Earn 1M Coins (manual)\n\nEnable toggle -> Auto TP + Tracking. Turn on Cloudy Fishing Beta MANUALLY."
         })
 
         GhostfinQuest.StatusLabel = Section_QuestTab_1:AddParagraph({
@@ -9194,7 +9287,7 @@ if QuestTab then
 
         Section_QuestTab_1:AddToggle("Toggle_AutoGhostfinQuestBETA", {
             Title = "Auto Ghostfin Quest [BETA]",
-            Description = "Auto TP + Tracking. You MUST turn on Quantum Fishing Beta manually!",
+            Description = "Auto TP + Tracking. You MUST turn on Cloudy Fishing Beta manually!",
             Default = false,
             Callback = function(val)
                 pcall(function()
@@ -9203,7 +9296,7 @@ if QuestTab then
                         GhostfinQuest.MythicCaught = 0
                         GhostfinQuest.RareEpicCaught = 0
                         GhostfinQuest.Thread = task.spawn(function() pcall(RunGhostfinQuest) end)
-                        NotifySuccess("Ghostfin Quest", "Auto Quest ACTIVE! Now turn on Quantum Fishing Beta!")
+                        NotifySuccess("Ghostfin Quest", "Auto Quest ACTIVE! Now turn on Cloudy Fishing Beta!")
                     else
                         GhostfinQuest.Active = false
                         if GhostfinQuest.Thread then pcall(function() task.cancel(GhostfinQuest.Thread) end); GhostfinQuest.Thread = nil end
@@ -9232,7 +9325,7 @@ if QuestTab then
         local Section_QuestTab_2 = QuestTab:AddSection("Element Quest")
         Section_QuestTab_2:AddParagraph({
             Title = "Element Rod Info",
-            Content = "Best rod in Fish It! (1111% Luck, 130% Speed, 900k kg)\n\n1. Own Ghostfinn Rod\n2. Catch 1 Secret at Ancient Jungle\n3. Catch 1 Secret at Sacred Temple\n4. Create 3 Transcended Stones\n5. Claim at Underground Cellar (NIGHT)\n\nEnable toggle -> Auto TP + Tracking. Turn on Quantum Fishing Beta MANUALLY."
+            Content = "Best rod in Fish It! (1111% Luck, 130% Speed, 900k kg)\n\n1. Own Ghostfinn Rod\n2. Catch 1 Secret at Ancient Jungle\n3. Catch 1 Secret at Sacred Temple\n4. Create 3 Transcended Stones\n5. Claim at Underground Cellar (NIGHT)\n\nEnable toggle -> Auto TP + Tracking. Turn on Cloudy Fishing Beta MANUALLY."
         })
 
         ElementQuest.StatusLabel = Section_QuestTab_2:AddParagraph({
@@ -9254,7 +9347,7 @@ if QuestTab then
 
         Section_QuestTab_2:AddToggle("Toggle_AutoElementQuestBETA", {
             Title = "Auto Element Quest [BETA]",
-            Description = "Auto TP + Tracking. You MUST turn on Quantum Fishing Beta manually!",
+            Description = "Auto TP + Tracking. You MUST turn on Cloudy Fishing Beta manually!",
             Default = false,
             Callback = function(val)
                 pcall(function()
@@ -9262,7 +9355,7 @@ if QuestTab then
                         ElementQuest.AncientJungleSecret = 0
                         ElementQuest.SacredTempleSecret = 0
                         ElementQuest.Thread = task.spawn(function() pcall(RunElementQuest) end)
-                        NotifySuccess("Element Quest", "Auto Quest ACTIVE! Now turn on Quantum Fishing Beta!")
+                        NotifySuccess("Element Quest", "Auto Quest ACTIVE! Now turn on Cloudy Fishing Beta!")
                     else
                         ElementQuest.Active = false
                         if ElementQuest.Thread then pcall(function() task.cancel(ElementQuest.Thread) end); ElementQuest.Thread = nil end
@@ -9354,11 +9447,11 @@ if QuestTab then
         local function CreateESPItem(inst, targetPart, displayName, categoryLabel, color)
             if not targetPart or not targetPart.Parent then return nil end
 
-            local existing = targetPart:FindFirstChild("QuantumESP")
+            local existing = targetPart:FindFirstChild("CloudyESP")
             if existing then pcall(function() existing:Destroy() end) end
 
             local bb = Instance.new("BillboardGui")
-            bb.Name = "QuantumESP"
+            bb.Name = "CloudyESP"
             bb.Adornee = targetPart
             bb.Size = UDim2.new(0, 190, 0, 28)
             bb.StudsOffset = Vector3.new(0, 2.5, 0)
@@ -9899,7 +9992,7 @@ if QuestTab then
 end
 pcall(function()
     Fluent:Notify({
-        Title = "Quantum HUB V 1.0.4",
+        Title = "Cloudy HUB V 1.0.4",
         Content = "Loaded! Remotes: " .. loadedCount .. " | Failed: " .. failedCount .. " | Map: " .. (isSupported and supportedMaps["121864768012064"] or mapName),
         Duration = 5,
         Icon = "solar/atom-bold"
