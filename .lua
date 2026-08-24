@@ -215,7 +215,6 @@ local function loadRemotes()
     local loaded, failed = 0, 0
     local remoteList = {
     cancel_fishing_input    = "CancelFishingInputs",
-    cancel_fishing_input    = "CancelFishingInputs",
     minigame_remote         = "RequestFishingMinigameStarted",
     finish_remote           = "CatchFishCompleted",
     equip_tool_remote       = "EquipToolFromHotbar",
@@ -1344,14 +1343,14 @@ local function teleportTo(locationName)
     local hrp = getHRP()
     if not hrp or not pos then return end
 
-    local targetCFrameme
+    local targetCFrame
     if typeof(pos) == "CFrame" then
-        targetCFrameme = pos
+        targetCFrame = pos
     else
-        targetCFrameme = CFrame.new(pos + Vector3.new(0, 3, 0))
+        targetCFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
     end
 
-    local success = TeleportTo(targetCFrameme)
+    local success = TeleportTo(targetCFrame)
     if success then
         task.wait(0.2)
         NotifySuccess("Teleport", "Teleported to " .. locationName .. "!")
@@ -7936,23 +7935,23 @@ if FlyTab then
                 local npcFolder = ReplicatedStorage:FindFirstChild("NPC") or Workspace:FindFirstChild("NPC")
                 if not npcFolder then return end
                 for _, npc in ipairs(npcFolder:GetChildren()) do
-                    local targetCFrameme = nil
+                    local targetCFrame = nil
                     pcall(function()
                         if npc:IsA("Model") then
                             if npc.PrimaryPart then
-                                targetCFrameme = npc.PrimaryPart.CFrame
+                                targetCFrame = npc.PrimaryPart.CFrame
                             else
                                 local hrp = npc:FindFirstChild("HumanoidRootPart")
                                     or npc:FindFirstChild("Head")
                                     or npc:FindFirstChildWhichIsA("BasePart")
-                                if hrp then targetCFrameme = hrp.CFrame end
+                                if hrp then targetCFrame = hrp.CFrame end
                             end
                         elseif npc:IsA("BasePart") then
-                            targetCFrameme = npc.CFrame
+                            targetCFrame = npc.CFrame
                         end
                     end)
-                    if targetCFrameme then
-                        table.insert(npcs, { Name = npc.Name, CFrame = targetCFrameme })
+                    if targetCFrame then
+                        table.insert(npcs, { Name = npc.Name, CFrame = targetCFrame })
                     end
                 end
             end)
@@ -9593,11 +9592,11 @@ if QuestTab then
         })
 
         _G.ESP_Master = _G.ESP_Master or false
-        _G.ESP_Treasure = _G.ESP_Treasure == nil and true or _G.ESP_Treasure
-        _G.ESP_Hunt = _G.ESP_Hunt == nil and true or _G.ESP_Hunt
-        _G.ESP_Veilshard = _G.ESP_Veilshard == nil and true or _G.ESP_Veilshard
-        _G.ESP_Crystal = _G.ESP_Crystal == nil and true or _G.ESP_Crystal
-        _G.ESP_Player = _G.ESP_Player == nil and true or _G.ESP_Player
+        if _G.ESP_Treasure == nil then _G.ESP_Treasure = true end
+        if _G.ESP_Hunt == nil then _G.ESP_Hunt = true end
+        if _G.ESP_Veilshard == nil then _G.ESP_Veilshard = true end
+        if _G.ESP_Crystal == nil then _G.ESP_Crystal = true end
+        if _G.ESP_Player == nil then _G.ESP_Player = true end
 
         local ESP_Cache = {}
 
